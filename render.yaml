@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: moa-backend
+    env: node
+    region: oregon
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        scope: all
+        value: production
+      - key: SUPABASE_URL
+        scope: all
+        sync: false
+      - key: SUPABASE_KEY
+        scope: all
+        sync: false
+      - key: JWT_SECRET
+        scope: all
+        sync: false
+      - key: FRONTEND_URL
+        scope: all
+        value: https://moa-system.vercel.app
+
+  - type: static_site
+    name: moa-frontend
+    buildCommand: npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        scope: all
+        value: https://moa-backend.onrender.com/api

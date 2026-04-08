@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MOA Management System</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/src/styles.css">
+</head>
+
+<body>
+
+  <!-- ==================== LOGIN SCREEN ==================== -->
+  <div id="loginScreen" class="screen active">
+    <div class="auth-container">
+      <div class="auth-form">
+        <h1>📋 MOA System</h1>
+        <p class="subtitle">Memorandum of Agreement Management</p>
+
+        <div id="authTabs" class="auth-tabs">
+          <button class="tab-btn active" data-tab="login">Login</button>
+          <button class="tab-btn" data-tab="register">Register</button>
+        </div>
+
+        <!-- Login Form -->
+        <form id="loginForm" class="auth-form-content active">
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="loginEmail" placeholder="your@email.com" required>
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="loginPassword" placeholder="Enter your password" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Login</button>
+          <p id="loginError" class="error-message"></p>
+        </form>
+
+        <!-- Register Form -->
+        <form id="registerForm" class="auth-form-content">
+          <div class="form-group">
+            <label>Username</label>
+            <input type="text" id="registerUsername" placeholder="Choose a username" required>
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="registerEmail" placeholder="your@email.com" required>
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="registerPassword" placeholder="Create a password" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Register</button>
+          <p id="registerError" class="error-message"></p>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MAIN APP SCREEN ==================== -->
+  <div id="appScreen" class="screen">
+    <header class="header">
+      <div class="header-main">
+        <div class="header-content">
+          <h1><i class="fas fa-clipboard-list"></i> Partnership Management System</h1>
+          <p>Memorandum of Agreement (MOA) documents manager</p>
+        </div>
+
+        <div class="header-actions">
+          <span id="userDisplay" class="user-display"></span>
+          <button id="logoutBtn" class="btn-logout">
+            <i class="fas fa-sign-out-alt"></i> Logout
+          </button>
+        </div>
+
+        <!-- Settings Panel Toggle -->
+        <button id="settingsToggleBtn" class="settings-toggle" title="Toggle Settings">
+          <i class="fas fa-cog gear-icon"></i>
+        </button>
+      </div>
+
+      <!-- Collapsible Settings Panel -->
+      <div id="settingsPanel" class="settings-panel">
+        <div class="settings-group">
+          <div class="search-container" style="width: 100%; position: relative;">
+            <i class="fas fa-search"
+              style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,0.6);"></i>
+            <input type="text" id="searchInput" class="search-input" placeholder="Search by company name..."
+              style="padding-left: 35px;">
+          </div>
+        </div>
+        <div class="settings-group">
+          <select id="sortBy" class="form-select">
+            <option value="uploadDate_DESC">Latest Uploaded</option>
+            <option value="uploadDate_ASC">Oldest Uploaded</option>
+            <option value="companyName_ASC">Company Name (A-Z)</option>
+            <option value="companyName_DESC">Company Name (Z-A)</option>
+            <option value="startDate_DESC">Start Date (Newest)</option>
+            <option value="startDate_ASC">Start Date (Oldest)</option>
+            <option value="endDate_DESC">End Date (Newest)</option>
+            <option value="endDate_ASC">End Date (Oldest)</option>
+          </select>
+        </div>
+        <div class="settings-group">
+          <label class="view-mode-label">View</label>
+          <div class="view-mode-buttons">
+            <button id="tileViewBtn" class="view-mode-btn active" data-view="tile"><i class="fas fa-th-large"></i>
+              Tiles</button>
+            <button id="listViewBtn" class="view-mode-btn" data-view="list"><i class="fas fa-list"></i> List</button>
+          </div>
+        </div>
+        <div class="settings-group">
+          <label for="collegeFilter" class="filter-label">COLLEGE:</label>
+          <select id="collegeFilter" class="form-select">
+            <option value="">-- All Colleges --</option>
+            <option value="CCS">CCS - College of Computer Studies</option>
+            <option value="CTE">CTE - College of Teacher Education</option>
+            <option value="CBA">CBA - College of Business Administration</option>
+            <option value="CCJE">CCJE - College of Criminal Justice Education</option>
+            <option value="CAS">CAS - College of Arts and Sciences</option>
+            <option value="COA">COA - College of Accountancy</option>
+            <option value="none">No College Selected</option>
+          </select>
+        </div>
+        <div class="settings-group">
+          <label for="partnerTypeFilter" class="filter-label">PARTNER TYPE:</label>
+          <select id="partnerTypeFilter" class="form-select">
+            <option value="">-- All Types --</option>
+            <option value="Industry Partner">Industry Partner</option>
+            <option value="Institutional Partner">Institutional Partner</option>
+            <option value="none">No Partner Type Selected</option>
+          </select>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <aside class="sidebar">
+        <div class="sidebar-section">
+          <div class="sidebar-section">
+            <h3>Actions</h3>
+            <button id="uploadBtn" class="btn btn-primary btn-block"><i class="fas fa-plus-circle"></i> Upload
+              MOA</button>
+            <button id="selectAllBtn" class="btn btn-secondary btn-block" style="display: none;"><i
+                class="fas fa-check-double"></i> Select All</button>
+            <button id="deleteSelectedBtn" class="btn btn-danger btn-block" style="display: none;"><i
+                class="fas fa-trash-alt"></i> Delete Selected</button>
+          </div>
+
+          <div class="sidebar-section">
+            <h3>Filter by Status</h3>
+            <div class="status-filter-buttons">
+              <button id="allStatusBtn" class="status-filter-btn active" data-status="all"><i
+                  class="fas fa-folder-open"></i> All MOAs</button>
+              <button id="activeStatusBtn" class="status-filter-btn" data-status="active"><i
+                  class="fas fa-check-circle"></i> Active</button>
+              <button id="dueForRenewalBtn" class="status-filter-btn" data-status="dueForRenewal"><i
+                  class="fas fa-sync"></i> Renewal</button>
+              <button id="expiredStatusBtn" class="status-filter-btn" data-status="expired"><i
+                  class="fas fa-history"></i> Expired</button>
+            </div>
+          </div>
+
+          <div class="sidebar-section">
+            <h3>Statistics</h3>
+            <div class="stats">
+              <div class="stat-item">
+                <span id="totalCountLabel" class="stat-label">Total MOAs:</span>
+                <span id="totalCount" class="stat-value">0</span>
+              </div>
+            </div>
+          </div>
+      </aside>
+
+      <section class="main-content">
+        <div id="loadingSpinner" class="loading" style="display: none;">Loading MOAs...</div>
+        <div id="emptyState" class="empty-state">
+          <div class="empty-icon"><i class="fas fa-folder-open"
+              style="font-size: 3rem; color: var(--border-color);"></i></div>
+          <h2 id="emptyStateTitle">No MOAs Yet</h2>
+          <p id="emptyStateMessage">Start by uploading your first MOA document using the upload button.</p>
+        </div>
+        <div id="moaList" class="moa-list" style="display: none;"></div>
+        <div id="paginationControls" class="pagination-controls" style="display: none;">
+          <button id="prevPageBtn" class="btn btn-secondary"><i class="fas fa-chevron-left"></i> Previous</button>
+          <span id="pageInfo" class="page-info">Page 1</span>
+          <button id="nextPageBtn" class="btn btn-secondary">Next <i class="fas fa-chevron-right"></i></button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ==================== INFO CARD MODAL ==================== -->
+  <div id="infoModal" class="modal" style="display: none;">
+    <div class="modal-content info-modal-content">
+      <button class="modal-close info-modal-close">&times;</button>
+      <div id="infoCardContainer"></div>
+    </div>
+  </div>
+
+  <!-- ==================== UPLOAD MODAL ==================== -->
+  <div id="uploadModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title-container">
+          <h2>Upload New MOA</h2>
+        </div>
+        <button class="modal-close">&times;</button>
+      </div>
+      <form id="uploadForm" class="modal-body upload-form">
+        <div class="form-group">
+          <label>Company Name *</label>
+          <input type="text" id="uploadCompanyName" name="companyName" class="form-input"
+            placeholder="Enter company name" required>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label>Start Date *</label>
+            <input type="date" id="uploadStartDate" name="startDate" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label>End Date *</label>
+            <input type="date" id="uploadEndDate" name="endDate" class="form-input" required>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label>College</label>
+            <select id="uploadCollege" name="college" class="form-input">
+              <option value="">-- None --</option>
+              <option value="CCS">CCS</option>
+              <option value="CTE">CTE</option>
+              <option value="CBA">CBA</option>
+              <option value="CCJE">CCJE</option>
+              <option value="CAS">CAS</option>
+              <option value="COA">COA</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Partner Type</label>
+            <select id="uploadPartnerType" name="partnerType" class="form-input">
+              <option value="">-- None --</option>
+              <option value="Industry Partner">Industry Partner</option>
+              <option value="Institutional Partner">Institutional Partner</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Notes</label>
+          <textarea id="uploadNotes" name="notes" class="form-input" rows="3" placeholder="Add any notes..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>PDF File *</label>
+          <input type="file" id="uploadFile" name="pdf" accept=".pdf" required>
+          <small>Only PDF files allowed</small>
+        </div>
+        <div id="uploadError" class="error-message"></div>
+        <div class="modal-footer" style="padding: 0; border: none; margin-top: 1rem;">
+          <button type="button" class="btn btn-secondary modal-close-btn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Upload MOA</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== DETAIL/EDIT MODAL ==================== -->
+  <div id="detailModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title-container">
+          <h2 id="modalTitle">Edit MOA</h2>
+        </div>
+        <div class="modal-badges-container"></div>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editId">
+        <div class="form-group">
+          <label>Company Name:</label>
+          <input type="text" id="metadataCompanyName" class="form-input">
+        </div>
+        <div class="form-group">
+          <label>Start Date:</label>
+          <input type="date" id="metadataStartDate" class="form-input">
+        </div>
+        <div class="form-group">
+          <label>End Date:</label>
+          <input type="date" id="metadataEndDate" class="form-input">
+        </div>
+        <div class="form-group">
+          <label>Notes:</label>
+          <textarea id="metadataNotes" class="form-input" rows="3" placeholder="Additional notes..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>College:</label>
+          <select id="metadataCollege" class="form-select">
+            <option value="">-- None --</option>
+            <option value="CCS">CCS - College of Computer Studies</option>
+            <option value="CTE">CTE - College of Teacher Education</option>
+            <option value="CBA">CBA - College of Business Administration</option>
+            <option value="CCJE">CCJE - College of Criminal Justice Education</option>
+            <option value="CAS">CAS - College of Arts and Sciences</option>
+            <option value="COA">COA - College of Accountancy</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Partner Type:</label>
+          <select id="metadataPartnerType" class="form-select">
+            <option value="">-- None --</option>
+            <option value="Industry Partner">Industry Partner</option>
+            <option value="Institutional Partner">Institutional Partner</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>PDF File:</label>
+          <span id="metadataPDFName">-</span>
+        </div>
+        <div class="form-group">
+          <label>File Size:</label>
+          <span id="metadataFileSize">-</span>
+        </div>
+        <div class="form-group">
+          <label>Upload Date:</label>
+          <span id="metadataDate">-</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="saveMetadataBtn" class="btn btn-primary">Save Changes</button>
+        <button id="closeModalBtn" class="btn btn-secondary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== CONFIRM DELETE MODAL ==================== -->
+  <div id="confirmModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="modal-header">
+        <div class="modal-title-container">
+          <h2>Confirm Delete</h2>
+        </div>
+      </div>
+      <div class="modal-body">
+        <p id="confirmMessage">Are you sure you want to delete this MOA?</p>
+      </div>
+      <div class="modal-footer">
+        <button id="confirmCancel" class="btn btn-secondary">Cancel</button>
+        <button id="confirmDelete" class="btn btn-danger">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/app.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: moa-postgres
+    environment:
+      POSTGRES_DB: moa_system
+      POSTGRES_USER: moa_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secure-password-change-this}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database-postgresql.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U moa_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: moa-backend
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DATABASE_URL: postgresql://moa_user:${POSTGRES_PASSWORD:-secure-password-change-this}@postgres:5432/moa_system
+      JWT_SECRET: ${JWT_SECRET:-change-this-to-a-random-secret-key-32-chars-min}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./uploads:/app/uploads
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: moa-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./frontend/dist:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
