@@ -3,7 +3,6 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 import jwt from 'jsonwebtoken';
-import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 
 dotenv.config();
@@ -34,18 +33,7 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// File upload middleware
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'application/pdf') {
-      cb(null, true);
-    } else {
-      cb(new Error('Only PDF files are allowed'));
-    }
-  }
-});
+
 
 // Authentication middleware
 const authenticateToken = (req, res, next) => {
@@ -198,25 +186,39 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
 // MOA ROUTES
 // ========================
 
-// Upload MOA
-app.post('/api/moas/upload', authenticateToken, upload.single('pdf'), async (req, res) => {
+// Get Presigned Upload URL
+app.post('/api/moas/upload-url', authenticateToken, async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No PDF file provided' });
+    const { originalName } = req.body;
+    if (!originalName) {
+      return res.status(400).json({ error: 'Filename is required' });
     }
 
-    const { companyName, startDate, endDate, notes, college, partnerType } = req.body;
-    const fileName = `${Date.now()}-${req.file.originalname}`;
+    const fileName = `${Date.now()}-${originalName.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
 
-    // Upload to Supabase Storage
-    const { error: uploadError } = await supabase.storage
+    const { data, error } = await supabase.storage
       .from('moas')
-      .upload(fileName, req.file.buffer, {
-        contentType: 'application/pdf'
-      });
+      .createSignedUploadUrl(fileName);
 
-    if (uploadError) {
-      return res.status(500).json({ error: 'Failed to upload PDF' });
+    if (error) {
+      console.error('Supabase signed URL error:', error);
+      return res.status(500).json({ error: 'Failed to generate upload URL' });
+    }
+
+    res.json({ signedUrl: data.signedUrl, fileName: data.path || fileName });
+  } catch (error) {
+    console.error('Upload URL error:', error);
+    res.status(500).json({ error: 'URL generation failed' });
+  }
+});
+
+// Create MOA record after upload
+app.post('/api/moas', authenticateToken, async (req, res) => {
+  try {
+    const { companyName, startDate, endDate, notes, college, partnerType, fileName, originalName, fileSize } = req.body;
+
+    if (!fileName || !originalName) {
+      return res.status(400).json({ error: 'File details missing' });
     }
 
     // Create MOA record
@@ -226,8 +228,8 @@ app.post('/api/moas/upload', authenticateToken, upload.single('pdf'), async (req
         user_id: req.user.id,
         company_name: companyName || 'Unnamed Company',
         pdf_filename: fileName,
-        pdf_original_name: req.file.originalname,
-        pdf_file_size: req.file.size,
+        pdf_original_name: originalName,
+        pdf_file_size: fileSize || 0,
         start_date: startDate || new Date().toISOString().split('T')[0],
         end_date: endDate || new Date().toISOString().split('T')[0],
         notes: notes || '',
@@ -239,13 +241,14 @@ app.post('/api/moas/upload', authenticateToken, upload.single('pdf'), async (req
       .single();
 
     if (dbError) {
+      console.error('Database insert error:', dbError);
       return res.status(500).json({ error: 'Failed to create MOA record' });
     }
 
     res.json(moa);
   } catch (error) {
-    console.error('Upload error:', error);
-    res.status(500).json({ error: 'Upload failed' });
+    console.error('Record creation error:', error);
+    res.status(500).json({ error: 'Record creation failed' });
   }
 });
 

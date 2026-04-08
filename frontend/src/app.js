@@ -415,27 +415,84 @@ async function handleUpload(e) {
   const formData = new FormData(e.target);
   const errorEl = document.getElementById('uploadError');
   errorEl.classList.remove('show');
+  
+  const file = formData.get('pdf');
+  if (!file || file.size === 0) {
+    errorEl.textContent = 'No PDF file provided';
+    errorEl.classList.add('show');
+    return;
+  }
+
+  showLoading(true);
 
   try {
-    const response = await fetch(`${API_URL}/moas/upload`, {
+    // 1. Get Presigned Upload URL from our Backend
+    const urlResponse = await fetch(`${API_URL}/moas/upload-url`, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` },
-      body: formData
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ originalName: file.name })
     });
 
-    if (response.ok) {
+    if (!urlResponse.ok) {
+      const data = await urlResponse.json();
+      throw new Error(data.error || 'Failed to get upload authorization');
+    }
+
+    const { signedUrl, fileName } = await urlResponse.json();
+
+    // 2. Upload file directly to Supabase
+    const uploadResponse = await fetch(signedUrl, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/pdf'
+      },
+      body: file
+    });
+
+    if (!uploadResponse.ok) {
+      throw new Error('Failed to upload file to storage');
+    }
+
+    // 3. Save metadata to database via our Backend
+    const metadata = {
+      companyName: formData.get('companyName'),
+      startDate: formData.get('startDate'),
+      endDate: formData.get('endDate'),
+      notes: formData.get('notes'),
+      college: formData.get('college'),
+      partnerType: formData.get('partnerType'),
+      fileName: fileName,
+      originalName: file.name,
+      fileSize: file.size
+    };
+
+    const dbResponse = await fetch(`${API_URL}/moas`, {
+      method: 'POST',
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(metadata)
+    });
+
+    if (dbResponse.ok) {
       showNotification('MOA uploaded successfully', 'success');
       closeAllModals();
       e.target.reset();
       loadMOAs();
     } else {
-      const data = await response.json();
-      errorEl.textContent = data.error || 'Upload failed';
-      errorEl.classList.add('show');
+      const data = await dbResponse.json();
+      throw new Error(data.error || 'Failed to save record context');
     }
   } catch (error) {
-    errorEl.textContent = 'Connection error';
+    console.error('Upload Error:', error);
+    errorEl.textContent = error.message || 'Connection error';
     errorEl.classList.add('show');
+  } finally {
+    showLoading(false);
   }
 }
 
