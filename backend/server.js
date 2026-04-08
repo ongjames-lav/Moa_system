@@ -25,7 +25,10 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: function(origin, callback) {
+    // Dynamically allow the requesting origin to bypass strictly matching trailing slashes
+    callback(null, origin || true);
+  },
   credentials: true
 }));
 app.use(express.json({ limit: '50mb' }));
