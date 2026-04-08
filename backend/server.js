@@ -252,35 +252,68 @@ app.post('/api/moas/upload', authenticateToken, upload.single('pdf'), async (req
 // Get MOAs list
 app.get('/api/moas', authenticateToken, async (req, res) => {
   try {
-    const { limit = 20, offset = 0, sortBy = 'upload_date', sortOrder = 'DESC' } = req.query;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+    const sortBy = req.query.sortBy || 'upload_date';
+    const sortOrder = (req.query.sortOrder || 'desc').toUpperCase() === 'ASC' ? 'asc' : 'desc';
 
-    const validSortFields = ['company_name', 'start_date', 'end_date', 'upload_date'];
-    const sortField = validSortFields.includes(sortBy) ? sortBy : 'upload_date';
-    const order = sortOrder.toUpperCase() === 'ASC' ? 'asc' : 'desc';
+    const { search, college, partnerType, status } = req.query;
 
-    // Get total count
-    const { count: total } = await supabase
-      .from('moas')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', req.user.id);
-
-    // Get paginated results
     let query = supabase
       .from('moas')
-      .select('*')
-      .eq('user_id', req.user.id)
-      .order(sortField, { ascending: order === 'asc' })
+      .select('*', { count: 'exact' })
+      .eq('user_id', req.user.id);
+
+    // Apply filters
+    if (search) {
+      query = query.or(`company_name.ilike.%${search}%,notes.ilike.%${search}%,pdf_original_name.ilike.%${search}%`);
+    }
+
+    if (college && college !== 'none') {
+      query = query.eq('college', college);
+    } else if (college === 'none') {
+      query = query.is('college', null);
+    }
+
+    if (partnerType && partnerType !== 'none') {
+      query = query.eq('partner_type', partnerType);
+    } else if (partnerType === 'none') {
+      query = query.is('partner_type', null);
+    }
+
+    if (status === 'active') {
+      const today = new Date().toISOString().split('T')[0];
+      query = query.lte('start_date', today).gte('end_date', today);
+    } else if (status === 'expired') {
+      const today = new Date().toISOString().split('T')[0];
+      query = query.lt('end_date', today);
+    } else if (status === 'dueForRenewal') {
+      const today = new Date().toISOString().split('T')[0];
+      const thirtyDaysFromNow = new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      query = query.gte('end_date', today).lte('end_date', thirtyDaysFromNow);
+    }
+
+    // Apply sorting and pagination
+    query = query
+      .order(sortBy, { ascending: sortOrder === 'asc' })
       .range(offset, offset + limit - 1);
 
-    const { data: moas, error } = await query;
+    const { data: moas, count: total, error } = await query;
 
     if (error) {
+      console.error('List error:', error);
       return res.status(500).json({ error: 'Failed to fetch MOAs' });
     }
 
     res.json({
-      moas: moas || [],
-      total: total || 0
+      data: moas || [],
+      pagination: {
+        total: total || 0,
+        page,
+        limit,
+        totalPages: Math.ceil((total || 0) / limit)
+      }
     });
   } catch (error) {
     console.error('List error:', error);
