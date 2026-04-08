@@ -1,15 +1,5 @@
 {
   "version": 2,
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/backend/server.js"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/frontend/dist/$1"
-    }
-  ],
   "builds": [
     {
       "src": "backend/server.js",
@@ -21,6 +11,16 @@
       "config": {
         "distDir": "dist"
       }
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/backend/server.js"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/$1"
     }
   ]
 }
