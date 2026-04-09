@@ -35,6 +35,17 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 
 
+// Path normalization middleware for Vercel
+app.use((req, res, next) => {
+  if (req.url.startsWith('/api')) {
+    req.url = req.url.replace('/api', '');
+  }
+  // Ensure we don't have double slashes
+  req.url = req.url.replace(/\/+/g, '/');
+  if (req.url === '') req.url = '/';
+  next();
+});
+
 // Authentication middleware
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -168,7 +179,7 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 // Get current user
-app.get('/api/auth/me', authenticateToken, async (req, res) => {
+app.get('/auth/me', authenticateToken, async (req, res) => {
   try {
     const { data: user } = await supabase
       .from('users')
@@ -187,7 +198,7 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
 // ========================
 
 // Get Presigned Upload URL
-app.post('/api/moas/upload-url', authenticateToken, async (req, res) => {
+app.post('/moas/upload-url', authenticateToken, async (req, res) => {
   try {
     const { originalName } = req.body;
     if (!originalName) {
