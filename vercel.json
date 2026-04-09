@@ -1,7 +1,18 @@
 {
   "version": 2,
+  "experimentalServices": {
+    "frontend": {
+      "framework": "vite",
+      "rootDirectory": "frontend",
+      "routePrefix": "/"
+    },
+    "backend": {
+      "entrypoint": "backend/server.js",
+      "routePrefix": "/api"
+    }
+  },
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/[...slug].js" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    { "source": "/api/(.*)", "destination": "backend/server.js" },
+    { "source": "/((?!api/).*)", "destination": "frontend/index.html" }
   ]
 }
