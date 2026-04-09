@@ -9,7 +9,7 @@
   "scripts": {
     "start": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
-    "build": "cd frontend && npm install && npm run build && cd .. && cp -r frontend/dist/* .",
+    "build": "cd frontend && npm install && npm run build && cd .. && mkdir -p dist && cp -r frontend/dist/* dist/",
     "pack": "electron-builder --dir",
     "dist": "npm run build && electron-builder",
     "dist:win": "npm run build && electron-builder --win --publish never",
