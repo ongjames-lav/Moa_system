@@ -384,14 +384,14 @@ function createMOACard(moa) {
         </div>
         <div class="moa-card-body">
             <div class="moa-dates">
-                <div class="date-item"><span class="date-label">Start:</span><span class="date-value">${formatDate(moa.start_date || moa.startDate)}</span></div>
-                <div class="date-item"><span class="date-label">End:</span><span class="date-value">${formatDate(moa.end_date || moa.endDate)}</span></div>
+                <div class="date-item"><span class="date-label">Start:</span><span class="date-value">${formatDate(moa.notarization_date || moa.startDate)}</span></div>
+                <div class="date-item"><span class="date-label">End:</span><span class="date-value">${formatDate(moa.expiration_date || moa.endDate)}</span></div>
             </div>
             <p class="moa-notes">${escapeHtml(moa.notes || 'No notes')}</p>
         </div>
         <div class="moa-card-footer">
             <div class="moa-meta">
-                <span class="meta-item"><i class="fas fa-file-pdf"></i> ${escapeHtml(moa.filename || moa.pdfOriginalName || 'moa.pdf')}</span>
+                <span class="meta-item"><i class="fas fa-file-pdf"></i> ${escapeHtml(moa.pdf_filename || moa.pdfOriginalName || 'moa.pdf')}</span>
                 <span class="meta-item"><i class="fas fa-calendar-alt"></i> ${formatDate(moa.upload_date || moa.uploadDate)}</span>
             </div>
             <div class="moa-actions">
@@ -628,12 +628,12 @@ function closeAllModals() {
 function openEditModal(moa) {
   document.getElementById('editId').value = moa.id;
   document.getElementById('modalTitle').textContent = `Edit: ${moa.company_name || moa.companyName}`;
-  document.getElementById('metadataCompanyName').value = moa.company_name || moa.companyName;
-  document.getElementById('metadataStartDate').value = formatDateForInput(moa.start_date || moa.startDate);
-  document.getElementById('metadataEndDate').value = formatDateForInput(moa.end_date || moa.endDate);
+  document.getElementById('metadataCompanyName').value = moa.company_name || '';
+  document.getElementById('metadataStartDate').value = moa.notarization_date ? moa.notarization_date.split('T')[0] : '';
+  document.getElementById('metadataEndDate').value = moa.expiration_date ? moa.expiration_date.split('T')[0] : '';
   document.getElementById('metadataNotes').value = moa.notes || '';
   document.getElementById('metadataCollege').value = moa.college || '';
-  document.getElementById('metadataPartnerType').value = moa.partner_type || moa.partnerType || '';
+  document.getElementById('metadataPartnerType').value = moa.partner_type || '';
   document.getElementById('metadataPDFName').textContent = moa.filename || moa.pdfOriginalName || 'moa.pdf';
   document.getElementById('metadataFileSize').textContent = moa.filesize || moa.pdfFileSize || 'N/A';
   document.getElementById('metadataDate').textContent = formatDate(moa.upload_date || moa.uploadDate);

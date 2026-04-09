@@ -136,14 +136,14 @@ router.post('/moas', authenticateToken, async (req, res) => {
       companyName, 
       college, 
       partnerType, 
-      notarizationDate, 
-      expirationDate, 
+      startDate, 
+      endDate, 
       status, 
       notes, 
-      pdfFilename 
+      fileName 
     } = req.body;
 
-    if (!companyName || !pdfFilename) {
+    if (!companyName || !fileName) {
       return res.status(400).json({ error: 'Company Name and PDF Filename are required' });
     }
 
@@ -155,11 +155,11 @@ router.post('/moas', authenticateToken, async (req, res) => {
         company_name: companyName,
         college,
         partner_type: partnerType,
-        notarization_date: notarizationDate || null,
-        expiration_date: expirationDate || null,
+        notarization_date: startDate || null,
+        expiration_date: endDate || null,
         status: status || 'Active',
         notes,
-        pdf_filename: pdfFilename,
+        pdf_filename: fileName,
         user_id: req.user.id,
         upload_date: new Date().toISOString()
       })
@@ -174,6 +174,41 @@ router.post('/moas', authenticateToken, async (req, res) => {
     res.status(201).json(data);
   } catch (error) {
     res.status(500).json({ error: 'Failed to create MOA' });
+  }
+});
+
+router.put('/moas/:id', authenticateToken, async (req, res) => {
+  try {
+    const { 
+      companyName, 
+      college, 
+      partnerType, 
+      startDate, 
+      endDate, 
+      status, 
+      notes 
+    } = req.body;
+
+    const { data, error } = await supabase
+      .from('moas')
+      .update({
+        company_name: companyName,
+        college,
+        partner_type: partnerType,
+        notarization_date: startDate,
+        expiration_date: endDate,
+        status,
+        notes
+      })
+      .eq('id', req.params.id)
+      .eq('user_id', req.user.id)
+      .select()
+      .single();
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update MOA' });
   }
 });
 
