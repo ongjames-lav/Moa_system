@@ -117,11 +117,15 @@ router.post('/moas/upload-url', authenticateToken, async (req, res) => {
 
     const fileName = `${Date.now()}-${originalName.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
     const { data, error } = await supabase.storage.from('moas').createSignedUploadUrl(fileName);
-    if (error) return res.status(500).json({ error: 'Failed to generate upload URL' });
+    if (error) {
+      console.error('Supabase Storage Error:', error);
+      return res.status(500).json({ error: `Failed to generate upload URL: ${error.message}` });
+    }
 
     res.json({ signedUrl: data.signedUrl, fileName: data.path || fileName });
   } catch (error) {
-    res.status(500).json({ error: 'URL generation failed' });
+    console.error('URL Generation Catch Error:', error);
+    res.status(500).json({ error: `URL generation failed: ${error.message}` });
   }
 });
 
