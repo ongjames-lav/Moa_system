@@ -13,7 +13,8 @@ const PORT = process.env.PORT || 5000;
 
 // Initialize Supabase
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY;
+// Use Service Role Key if available to bypass RLS for server-side operations
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 const jwtSecret = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
