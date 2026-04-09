@@ -179,7 +179,18 @@ async function handleLogin(e) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
     });
-    const data = await response.json();
+
+    // Check if response is actually JSON
+    const contentType = response.headers.get('content-type');
+    let data;
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      console.error('Non-JSON response received:', text.substring(0, 200));
+      throw new Error(`Server returned unexpected format: ${response.status}`);
+    }
+
     if (response.ok) {
       token = data.token;
       user = data.user;
@@ -187,7 +198,7 @@ async function handleLogin(e) {
       userDisplay.textContent = user.username;
       showApp();
     } else {
-      loginError.textContent = data.error || 'Login failed';
+      loginError.textContent = data.error || `Login failed (${response.status})`;
       loginError.classList.add('show');
     }
   } catch (error) {
@@ -209,7 +220,18 @@ async function handleRegister(e) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, email, password })
     });
-    const data = await response.json();
+
+    // Check if response is actually JSON
+    const contentType = response.headers.get('content-type');
+    let data;
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      console.error('Non-JSON response received:', text.substring(0, 200));
+      throw new Error(`Server returned unexpected format: ${response.status}`);
+    }
+
     if (response.ok) {
       token = data.token;
       user = data.user;
@@ -217,7 +239,7 @@ async function handleRegister(e) {
       userDisplay.textContent = user.username;
       showApp();
     } else {
-      registerError.textContent = data.error || 'Registration failed';
+      registerError.textContent = data.error || `Registration failed (${response.status})`;
       registerError.classList.add('show');
     }
   } catch (error) {
