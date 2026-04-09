@@ -140,7 +140,9 @@ router.post('/moas', authenticateToken, async (req, res) => {
       endDate, 
       status, 
       notes, 
-      fileName 
+      fileName,
+      originalName,
+      fileSize
     } = req.body;
 
     if (!companyName || !fileName) {
@@ -155,11 +157,13 @@ router.post('/moas', authenticateToken, async (req, res) => {
         company_name: companyName,
         college,
         partner_type: partnerType,
-        notarization_date: startDate || null,
-        expiration_date: endDate || null,
+        start_date: startDate || null,
+        end_date: endDate || null,
         status: status || 'Active',
         notes,
         pdf_filename: fileName,
+        pdf_original_name: originalName || null,
+        pdf_file_size: fileSize || null,
         user_id: req.user.id,
         upload_date: new Date().toISOString()
       })
@@ -195,8 +199,8 @@ router.put('/moas/:id', authenticateToken, async (req, res) => {
         company_name: companyName,
         college,
         partner_type: partnerType,
-        notarization_date: startDate,
-        expiration_date: endDate,
+        start_date: startDate,
+        end_date: endDate,
         status,
         notes
       })

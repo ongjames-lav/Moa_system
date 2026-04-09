@@ -20,6 +20,21 @@ let currentViewMode = localStorage.getItem('moaViewMode') || 'tile';
 let moasData = [];
 let deleteId = null;
 
+// Helpers
+function setLoading(btn, isLoading, loadingText = 'Processing...') {
+  if (!btn) return;
+  if (isLoading) {
+    btn.dataset.originalText = btn.innerHTML;
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${loadingText}`;
+    btn.disabled = true;
+    btn.classList.add('loading');
+  } else {
+    btn.innerHTML = btn.dataset.originalText || btn.innerHTML;
+    btn.disabled = false;
+    btn.classList.remove('loading');
+  }
+}
+
 // DOM Elements - Auth
 const loginScreen = document.getElementById('loginScreen');
 const appScreen = document.getElementById('appScreen');
@@ -178,6 +193,9 @@ async function handleLogin(e) {
   const password = document.getElementById('loginPassword').value;
   loginError.classList.remove('show');
 
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  setLoading(submitBtn, true, 'Logging in...');
+  
   try {
     const response = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
@@ -207,8 +225,10 @@ async function handleLogin(e) {
       loginError.classList.add('show');
     }
   } catch (error) {
-    loginError.textContent = 'Connection error';
+    loginError.textContent = error.message || 'Connection error';
     loginError.classList.add('show');
+  } finally {
+    setLoading(submitBtn, false);
   }
 }
 
@@ -219,6 +239,9 @@ async function handleRegister(e) {
   const password = document.getElementById('registerPassword').value;
   registerError.classList.remove('show');
 
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  setLoading(submitBtn, true, 'Creating Account...');
+
   try {
     const response = await fetch(`${API_URL}/auth/register`, {
       method: 'POST',
@@ -226,9 +249,6 @@ async function handleRegister(e) {
       body: JSON.stringify({ username, email, password })
     });
 
-    // Check if response is actually JSON
-    const contentType = response.headers.get('content-type');
-    let data;
     if (contentType && contentType.includes('application/json')) {
       data = await response.json();
     } else {
@@ -450,7 +470,8 @@ async function handleUpload(e) {
     return;
   }
 
-  showLoading(true);
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  setLoading(submitBtn, true, 'Uploading MOA...');
 
   try {
     // 1. Get Presigned Upload URL from our Backend
@@ -519,7 +540,7 @@ async function handleUpload(e) {
     errorEl.textContent = error.message || 'Connection error';
     errorEl.classList.add('show');
   } finally {
-    showLoading(false);
+    setLoading(submitBtn, false);
   }
 }
 
