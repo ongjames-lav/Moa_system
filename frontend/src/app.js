@@ -1,4 +1,4 @@
-// API Configuration
+// API Configuration (Sync Heartbeat: 2026-04-09 22:50)
 let API_URL = import.meta.env.VITE_API_URL || '/api';
 
 // Emergency Override: Force use of Vercel API if dashboard has an old Render URL
