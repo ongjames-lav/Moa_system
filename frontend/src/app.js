@@ -533,8 +533,8 @@ async function handleDeleteConfirm() {
   try {
     let response;
     if (deleteId === 'bulk') {
-      response = await fetch(`${API_URL}/moas/bulk`, {
-        method: 'DELETE',
+      response = await fetch(`${API_URL}/moas/delete-multiple`, {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -570,22 +570,16 @@ async function downloadMOA(id) {
     });
     if (!response.ok) throw new Error('Download failed');
 
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
+    // Backend returns { url: signedUrl } — open the signed URL directly
+    const data = await response.json();
+    if (!data.url) throw new Error('No download URL returned');
+
     const a = document.createElement('a');
-    a.href = url;
-
-    // Try to get filename from header
-    const disposition = response.headers.get('content-disposition');
-    let filename = 'moa.pdf';
-    if (disposition && disposition.includes('filename=')) {
-      filename = disposition.split('filename=')[1].replace(/\"/g, '');
-    }
-
-    a.download = filename;
+    a.href = data.url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
     document.body.appendChild(a);
     a.click();
-    window.URL.revokeObjectURL(url);
     a.remove();
   } catch (error) {
     showNotification('Failed to download file', 'error');
