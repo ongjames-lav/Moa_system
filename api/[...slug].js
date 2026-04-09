@@ -1,5 +1,5 @@
-// Vercel API catch-all route — wraps the Express backend as a serverless function.
-// All requests to /api/* are handled here by the Express app.
+// Vercel Serverless Function entry point
+import './register-backend.js'; // Helper to ensure dependencies are found
 import app from '../backend/server.js';
 
 export default app;
