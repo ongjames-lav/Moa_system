@@ -241,6 +241,22 @@ router.get('/moas', authenticateToken, async (req, res) => {
     if (college && college !== 'none') query = query.eq('college', college);
     if (partnerType && partnerType !== 'none') query = query.eq('partner_type', partnerType);
     
+    // Date-based Status Filtering
+    const today = new Date().toISOString().split('T')[0];
+    if (status === 'active') {
+      // Active: (not expired yet) AND (already started OR start date not set)
+      query = query.gte('end_date', today);
+    } else if (status === 'expired') {
+      // Expired: End date has passed
+      query = query.lt('end_date', today);
+    } else if (status === 'dueForRenewal') {
+      // Renewal: Expiring in the next 31 days
+      const thirtyOneDaysLater = new Date();
+      thirtyOneDaysLater.setDate(thirtyOneDaysLater.getDate() + 31);
+      const renewalDate = thirtyOneDaysLater.toISOString().split('T')[0];
+      query = query.gte('end_date', today).lte('end_date', renewalDate);
+    }
+    
     // Sort and Paginate
     query = query.order('upload_date', { ascending: false }).range(offset, offset + limit - 1);
     const { data: moas, count: total } = await query;
