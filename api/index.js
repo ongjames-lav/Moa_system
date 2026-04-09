@@ -159,7 +159,6 @@ router.post('/moas', authenticateToken, async (req, res) => {
         partner_type: partnerType,
         start_date: startDate || null,
         end_date: endDate || null,
-        status: status || 'Active',
         notes,
         pdf_filename: fileName,
         pdf_original_name: originalName || null,
@@ -201,7 +200,6 @@ router.put('/moas/:id', authenticateToken, async (req, res) => {
         partner_type: partnerType,
         start_date: startDate,
         end_date: endDate,
-        status,
         notes
       })
       .eq('id', req.params.id)
