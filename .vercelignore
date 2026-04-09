@@ -1,0 +1,10 @@
+node_modules
+dist-app
+out
+data
+*.db
+debug.log
+src/
+libs/
+uploads/
+.vite/
