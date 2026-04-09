@@ -1,5 +1,10 @@
 // API Configuration
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+let API_URL = import.meta.env.VITE_API_URL || '/api';
+
+// Emergency Override: Force use of Vercel API if dashboard has an old Render URL
+if (API_URL.includes('onrender.com') || window.location.hostname.includes('vercel.app')) {
+  API_URL = '/api';
+}
 
 // State
 let token = localStorage.getItem('authToken');
