@@ -16,11 +16,10 @@ const supabaseKey = process.env.SUPABASE_ANON_KEY;
 const jwtSecret = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
 if (!supabaseUrl || !supabaseKey) {
-  console.error('Missing Supabase environment variables!');
-  process.exit(1);
+  console.warn('⚠️ Missing Supabase environment variables! Backend will be in degraded mode.');
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
 // Middleware
 app.use(cors({
@@ -592,15 +591,25 @@ app.get('/api/moas/:id/download', authenticateToken, async (req, res) => {
   }
 });
 
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+// Health check with diagnostics
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    diagnostics: {
+      hasSupabaseUrl: !!process.env.SUPABASE_URL,
+      hasSupabaseKey: !!process.env.SUPABASE_ANON_KEY,
+      hasNextPublicUrl: !!process.env.VITE_SUPABASE_URL, // Common mistake
+      env: process.env.NODE_ENV
+    },
+    timestamp: new Date().toISOString() 
+  });
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`✅ MOA System Backend running on port ${PORT}`);
-  console.log(`📝 API Documentation: http://localhost:${PORT}/api`);
-});
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`✅ MOA System Backend running on port ${PORT}`);
+  });
+}
 
 export default app;
