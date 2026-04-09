@@ -130,6 +130,68 @@ router.post('/moas/upload-url', authenticateToken, async (req, res) => {
   }
 });
 
+router.post('/moas', authenticateToken, async (req, res) => {
+  try {
+    const { 
+      companyName, 
+      college, 
+      partnerType, 
+      notarizationDate, 
+      expirationDate, 
+      status, 
+      notes, 
+      pdfFilename 
+    } = req.body;
+
+    if (!companyName || !pdfFilename) {
+      return res.status(400).json({ error: 'Company Name and PDF Filename are required' });
+    }
+
+    if (!supabase) return res.status(500).json({ error: 'Database connection not initialized' });
+
+    const { data, error } = await supabase
+      .from('moas')
+      .insert({
+        company_name: companyName,
+        college,
+        partner_type: partnerType,
+        notarization_date: notarizationDate || null,
+        expiration_date: expirationDate || null,
+        status: status || 'Active',
+        notes,
+        pdf_filename: pdfFilename,
+        user_id: req.user.id,
+        upload_date: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Insert Error:', error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.status(201).json(data);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create MOA' });
+  }
+});
+
+router.delete('/moas/:id', authenticateToken, async (req, res) => {
+  try {
+    const { error } = await supabase
+      .from('moas')
+      .delete()
+      .eq('id', req.params.id)
+      .eq('user_id', req.user.id);
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ message: 'MOA deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete MOA' });
+  }
+});
+
 router.get('/moas', authenticateToken, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
