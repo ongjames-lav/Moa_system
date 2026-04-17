@@ -1349,7 +1349,6 @@ body {
   display: flex;
   gap: 1rem;
   justify-content: flex-end;
-  background-color: var(--bg-color);
 }
 
 /* Info Modal Styles */
