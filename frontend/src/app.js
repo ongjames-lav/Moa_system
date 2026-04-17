@@ -678,7 +678,7 @@ function openCertModal(moa) {
 
   // Block certificate generation if expired
   if (isExpired) {
-    alert('This MOA has expired. Certification of Validity can only be generated for Active or Renewal-stage agreements.');
+    showToast('This MOA has expired. Certification of Validity can only be generated for Active agreements.', 'error');
     return;
   }
 
@@ -706,6 +706,33 @@ function openCertModal(moa) {
   // Show modal
   document.getElementById('certModal').style.display = 'flex';
   document.body.classList.add('no-scroll');
+}
+
+// ── CUSTOM TOAST NOTIFICATIONS ──────────────────────────────────────────────────
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  
+  const iconMap = {
+    info: 'fa-info-circle',
+    success: 'fa-check-circle',
+    error: 'fa-exclamation-circle',
+    warning: 'fa-exclamation-triangle'
+  };
+
+  toast.innerHTML = `
+    <i class="fas ${iconMap[type]} toast-icon"></i>
+    <div class="toast-message">${message}</div>
+  `;
+
+  container.appendChild(toast);
+
+  // Auto-remove after 4 seconds
+  setTimeout(() => {
+    toast.classList.add('hiding');
+    setTimeout(() => toast.remove(), 400);
+  }, 4000);
 }
 
 function openEditModal(moa) {
