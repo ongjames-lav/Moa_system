@@ -349,6 +349,84 @@
     </div>
   </div>
 
+  <!-- ==================== CERTIFICATE MODAL ==================== -->
+  <div id="certModal" class="modal" style="display: none;">
+    <div class="cert-modal-wrapper">
+      <div class="cert-modal-toolbar">
+        <span class="cert-toolbar-title"><i class="fas fa-certificate"></i> Certificate of Validity</span>
+        <div class="cert-toolbar-actions">
+          <button id="certPrintBtn" class="btn btn-primary" onclick="window.print()">
+            <i class="fas fa-print"></i> Print / Save as PDF
+          </button>
+          <button class="btn btn-secondary" id="certCloseBtn">
+            <i class="fas fa-times"></i> Close
+          </button>
+        </div>
+      </div>
+
+      <!-- Legal-size certificate page: 8.5" x 14" -->
+      <div class="cert-page-container">
+        <div id="certPage" class="cert-page">
+
+          <!-- HEADER ROW: Logos Left | Text Right -->
+          <div class="cert-header">
+            <div class="cert-logos">
+              <img src="/cert-assets/image20.png" alt="City of Malabon Seal" class="cert-logo-img cert-logo-malabon">
+              <img src="/cert-assets/image2.png" alt="CMU Shield" class="cert-logo-img">
+              <img src="/cert-assets/image4.png" alt="Bagong Pilipinas" class="cert-logo-img cert-logo-bagong">
+            </div>
+            <div class="cert-header-text">
+              <p class="cert-republic">REPUBLIC OF THE PHILIPPINES</p>
+              <p class="cert-city-name">CITY OF MALABON</p>
+              <p class="cert-university-name">CITY OF MALABON UNIVERSITY</p>
+              <p class="cert-address-line">Pampano cor. Maya-Maya St. Brgy. Longos, Malabon City, 1472 Philippines<br>Trunkline: (02) 8376-0064 &nbsp;|&nbsp; <a href="mailto:cmuofficial@cityofmalabonuniversity.edu.ph" class="cert-email-link">cmuofficial@cityofmalabonuniversity.edu.ph</a><br>Website: cityofmalabonuniversity.edu.ph</p>
+            </div>
+          </div>
+
+
+
+          <!-- CERTIFICATE BODY -->
+          <div class="cert-body">
+            <p class="cert-title">CERTIFICATION OF VALIDITY</p>
+            <p class="cert-subtitle">OF MEMORANDUM OF AGREEMENT</p>
+
+            <div class="cert-body-text">
+              <p class="cert-para">This is to certify that the Memorandum of Agreement (MOA) entered into by and between:</p>
+
+              <div class="cert-party-block">
+                <p id="certPartyName" class="cert-party-name">[NAME OF FIRST PARTY / INSTITUTION]</p>
+                <p class="cert-party-connector">and</p>
+                <p class="cert-party-cmu">City of Malabon University</p>
+              </div>
+
+              <p class="cert-para" id="certStatusPara">remains valid, binding, and in full force and effect as of this date.</p>
+
+              <p class="cert-para">The said agreement covers the terms and conditions relating to Partnership, and both parties have agreed to uphold their respective roles and responsibilities as stipulated in the document.</p>
+            </div>
+
+            <!-- Issued This — date underline with hint directly below -->
+            <div class="cert-issuance-block">
+              <p class="cert-issued-line">Issued this &nbsp;<span id="certIssuanceDate" class="cert-issued-date">__________________</span></p>
+              <p class="cert-date-hint">(date of issuance)</p>
+            </div>
+
+            <!-- Certified By — signature above name line -->
+            <div class="cert-certifier-block">
+              <p class="cert-certified-label">Certified by:</p>
+              <div class="cert-sig-area">
+                <img src="/cert-assets/extract_the_signature_202604172240.png" alt="Signature of Engr. Jed G. Concepcion" class="cert-sig-img">
+              </div>
+              <p class="cert-sig-name">Engr. Jed G. Concepcion</p>
+              <p class="cert-sig-title">Head, Business Linkages and Partnership</p>
+              <p class="cert-sig-org">City of Malabon University</p>
+            </div>
+          </div>
+
+        </div><!-- end cert-page -->
+      </div><!-- end cert-page-container -->
+    </div><!-- end cert-modal-wrapper -->
+  </div>
+
   <script type="module" src="/src/app.js"></script>
 </body>
 

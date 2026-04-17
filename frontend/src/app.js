@@ -153,6 +153,12 @@ function setupEventListeners() {
     btn.addEventListener('click', closeAllModals);
   });
 
+  // Certificate modal close
+  document.getElementById('certCloseBtn').addEventListener('click', () => {
+    document.getElementById('certModal').style.display = 'none';
+    document.body.classList.remove('no-scroll');
+  });
+
   // Upload Form
   document.getElementById('uploadForm').addEventListener('submit', handleUpload);
 
@@ -164,8 +170,13 @@ function setupEventListeners() {
 
   // Global Modal Click (close on backdrop)
   window.addEventListener('click', (e) => {
-    if (e.target.classList.contains('modal')) {
+    if (e.target.classList.contains('modal') && e.target.id !== 'certModal') {
       closeAllModals();
+    }
+    // Close cert modal on backdrop click
+    if (e.target.id === 'certModal') {
+      e.target.style.display = 'none';
+      document.body.classList.remove('no-scroll');
     }
   });
 }
@@ -417,6 +428,7 @@ function createMOACard(moa) {
             <div class="moa-actions">
                 <button class="btn-icon btn-view" title="Edit"><i class="fas fa-edit"></i></button>
                 <button class="btn-icon btn-download" title="Download"><i class="fas fa-download"></i></button>
+                <button class="btn-icon btn-cert" title="Generate Certificate" style="color:#7c3aed;"><i class="fas fa-certificate"></i></button>
                 <button class="btn-icon btn-delete danger" title="Delete"><i class="fas fa-trash"></i></button>
             </div>
         </div>
@@ -438,6 +450,11 @@ function createMOACard(moa) {
   card.querySelector('.btn-download').addEventListener('click', (e) => {
     e.stopPropagation();
     downloadMOA(moa.id);
+  });
+
+  card.querySelector('.btn-cert').addEventListener('click', (e) => {
+    e.stopPropagation();
+    openCertModal(moa);
   });
 
   card.querySelector('.btn-delete').addEventListener('click', (e) => {
@@ -641,9 +658,54 @@ function openModal(modal) {
 }
 
 function closeAllModals() {
-  document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+  document.querySelectorAll('.modal').forEach(m => {
+    if (m.id !== 'certModal') m.style.display = 'none';
+  });
   document.body.classList.remove('no-scroll');
   deleteId = null;
+}
+
+// ── Certificate Modal ─────────────────────────────────────────────────────────
+function openCertModal(moa) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const endDate = new Date(moa.end_date || moa.endDate);
+  endDate.setHours(23, 59, 59, 999);
+
+  const timeDiff = endDate - today;
+  const daysLeft = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+  const isExpired = today > endDate;
+
+  // Block certificate generation if expired
+  if (isExpired) {
+    alert('This MOA has expired. Certification of Validity can only be generated for Active or Renewal-stage agreements.');
+    return;
+  }
+
+  const isRenewal = !isExpired && daysLeft <= 31;
+
+  // Determine status sentence
+  let statusText;
+  if (isExpired) {
+    statusText = 'has expired and is no longer in force and effect as of this date.';
+  } else if (isRenewal) {
+    statusText = `remains valid and is due for renewal within ${daysLeft} day${daysLeft === 1 ? '' : 's'} as of this date.`;
+  } else {
+    statusText = 'remains valid, binding, and in full force and effect as of this date.';
+  }
+
+  // Populate fields
+  document.getElementById('certPartyName').textContent =
+    moa.company_name || moa.companyName || '[NAME OF FIRST PARTY / INSTITUTION]';
+  document.getElementById('certStatusPara').textContent = statusText;
+
+  // Issuance date — e.g. "April 17, 2026"
+  const issuanceDate = today.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+  document.getElementById('certIssuanceDate').textContent = issuanceDate;
+
+  // Show modal
+  document.getElementById('certModal').style.display = 'flex';
+  document.body.classList.add('no-scroll');
 }
 
 function openEditModal(moa) {
@@ -717,6 +779,7 @@ function openInfoModal(moa) {
                 <div class="moa-actions">
                     <button class="btn btn-secondary btn-icon-edit"><i class="fas fa-edit"></i> Edit</button>
                     <button class="btn btn-primary btn-icon-download"><i class="fas fa-download"></i> Download</button>
+                    <button class="btn btn-icon-cert" style="background:#ede9fe;color:#6d28d9;border:none;padding:0.875rem 1.25rem;border-radius:8px;font-size:0.95rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:0.5rem;"><i class="fas fa-certificate"></i> Certificate</button>
                 </div>
             </div>
         </div>
@@ -728,6 +791,10 @@ function openInfoModal(moa) {
   });
   infoCardContainer.querySelector('.btn-icon-download').addEventListener('click', () => {
     downloadMOA(moa.id);
+  });
+  infoCardContainer.querySelector('.btn-icon-cert').addEventListener('click', () => {
+    closeAllModals();
+    openCertModal(moa);
   });
 
   openModal(infoModal);

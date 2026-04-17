@@ -17,6 +17,7 @@
     "backend:cloud": "cd backend && npm install && npm run dev",
     "frontend": "cd frontend && npm install && npm run dev",
     "frontend:build": "cd frontend && npm install && npm run build",
+    "dev:local": "concurrently \"cd backend && node server.js\" \"cd frontend && vite\"",
     "dev:self-hosted": "concurrently \"npm run backend\" \"npm run frontend\"",
     "dev:cloud": "concurrently \"npm run backend:cloud\" \"npm run frontend\"",
     "build:self-hosted": "npm run frontend:build",
