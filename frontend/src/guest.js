@@ -70,10 +70,13 @@ function setupEventListeners() {
     // Settings Toggle (Match Admin)
     const settingsToggleBtn = document.getElementById('settingsToggleBtn');
     const settingsPanel = document.getElementById('settingsPanel');
-    if (settingsToggleBtn && settingsPanel) {
+    const container = document.querySelector('.container');
+    
+    if (settingsToggleBtn && settingsPanel && container) {
         settingsToggleBtn.addEventListener('click', () => {
-            settingsPanel.classList.toggle('active');
-            settingsToggleBtn.classList.toggle('active');
+            settingsPanel.classList.toggle('open');
+            settingsToggleBtn.classList.toggle('open');
+            container.classList.toggle('settings-open');
         });
     }
 
@@ -266,8 +269,14 @@ async function downloadMOA(id) {
         const response = await fetch(`${API_URL}/public/moas/${id}/download`);
         const data = await response.json();
         if (data.url) {
-            // Using location.href is more robust than window.open for direct downloads
-            window.location.href = data.url;
+            // Match admin behavior: open in new tab via temporary anchor
+            const a = document.createElement('a');
+            a.href = data.url;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
         } else {
             showNotification('Failed to get download link: ' + (data.error || 'Unknown error'), 'error');
         }
