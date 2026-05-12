@@ -9,7 +9,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: 'index.html',
-        guest: 'guest.html'
+        guest: 'guest/index.html'
       }
     },
     minify: 'esbuild'
