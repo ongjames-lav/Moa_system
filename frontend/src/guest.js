@@ -67,8 +67,18 @@ function setupEventListeners() {
     document.getElementById('prevPageBtn').addEventListener('click', () => { if (currentPage > 1) { currentPage--; loadMOAs(); } });
     document.getElementById('nextPageBtn').addEventListener('click', () => { currentPage++; loadMOAs(); });
 
+    // Settings Toggle (Match Admin)
+    const settingsToggleBtn = document.getElementById('settingsToggleBtn');
+    const settingsPanel = document.getElementById('settingsPanel');
+    if (settingsToggleBtn && settingsPanel) {
+        settingsToggleBtn.addEventListener('click', () => {
+            settingsPanel.classList.toggle('active');
+            settingsToggleBtn.classList.toggle('active');
+        });
+    }
+
     // Modals
-    document.querySelectorAll('.modal-close').forEach(btn => {
+    document.querySelectorAll('.modal-close, .info-modal-close').forEach(btn => {
         btn.addEventListener('click', () => {
             infoModal.style.display = 'none';
         });
@@ -256,11 +266,13 @@ async function downloadMOA(id) {
         const response = await fetch(`${API_URL}/public/moas/${id}/download`);
         const data = await response.json();
         if (data.url) {
-            window.open(data.url, '_blank');
+            // Using location.href is more robust than window.open for direct downloads
+            window.location.href = data.url;
         } else {
-            showNotification('Failed to get download link', 'error');
+            showNotification('Failed to get download link: ' + (data.error || 'Unknown error'), 'error');
         }
     } catch (error) {
+        console.error('Download Error:', error);
         showNotification('Download failed', 'error');
     }
 }
