@@ -172,6 +172,27 @@ body {
   display: block;
 }
 
+.auth-separator {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 20px 0;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.auth-separator::before,
+.auth-separator::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.auth-separator span {
+  padding: 0 15px;
+}
+
 /* ==================== HEADER ==================== */
 .header {
   background: linear-gradient(135deg, var(--primary-color) 0%, #1e3a8a 100%);

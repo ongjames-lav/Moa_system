@@ -101,6 +101,14 @@ function setupEventListeners() {
     });
   });
 
+  // Guest View Button
+  const guestViewBtn = document.getElementById('guestViewBtn');
+  if (guestViewBtn) {
+    guestViewBtn.addEventListener('click', () => {
+      window.location.href = '/guest';
+    });
+  }
+
   // Forms
   loginForm.addEventListener('submit', handleLogin);
   registerForm.addEventListener('submit', handleRegister);

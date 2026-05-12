@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MOA Public Directory — City of Malabon University</title>
+  <meta name="description" content="Browse the City of Malabon University's Memorandum of Agreement directory. View active partnerships, filter by college, and download documents.">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/src/styles.css">
+  <style>
+    /* ── Guest-specific overrides ── */
+    .guest-header {
+      background: linear-gradient(135deg, #1a1f35 0%, #2d3561 100%);
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid rgba(99, 132, 255, 0.3);
+      box-shadow: 0 2px 20px rgba(0,0,0,0.4);
+    }
+    .guest-header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .guest-header-left h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #fff;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .guest-header-left p {
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.55);
+      margin: 0;
+    }
+    .guest-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(99, 132, 255, 0.15);
+      border: 1px solid rgba(99, 132, 255, 0.4);
+      color: #a5b4fc;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.3rem 0.75rem;
+      border-radius: 999px;
+    }
+    .guest-badge i { font-size: 0.65rem; }
+
+    /* Settings bar reused from admin — just remove the gap */
+    .guest-settings-panel {
+      background: rgba(255,255,255,0.04);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .guest-settings-panel .search-container {
+      position: relative;
+      flex: 1;
+      min-width: 200px;
+    }
+    .guest-settings-panel .search-container i {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: rgba(255,255,255,0.4);
+      pointer-events: none;
+    }
+    .guest-settings-panel .search-input {
+      padding-left: 36px;
+      width: 100%;
+    }
+
+    /* Read-only card: hide edit & delete, keep download */
+    .guest-card .btn-view,
+    .guest-card .btn-delete,
+    .guest-card .moa-checkbox { display: none !important; }
+
+    .guest-info-footer {
+      margin-top: 1rem;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    /* Readonly banner inside info modal */
+    .readonly-notice {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(99,132,255,0.08);
+      border: 1px solid rgba(99,132,255,0.2);
+      border-radius: 8px;
+      padding: 0.6rem 1rem;
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.55);
+      margin-bottom: 1rem;
+    }
+    .readonly-notice i { color: #a5b4fc; }
+  </style>
+</head>
+
+<body>
+
+  <!-- ==================== GUEST HEADER ==================== -->
+  <header class="guest-header">
+    <div class="guest-header-left">
+      <h1>
+        <i class="fas fa-clipboard-list" style="color:#a5b4fc;"></i>
+        Partnership Directory
+      </h1>
+      <p>City of Malabon University — Memorandum of Agreement Registry</p>
+    </div>
+    <span class="guest-badge"><i class="fas fa-eye"></i> Guest View</span>
+  </header>
+
+  <!-- ==================== SETTINGS / SEARCH BAR ==================== -->
+  <div class="guest-settings-panel">
+    <div class="search-container">
+      <i class="fas fa-search"></i>
+      <input type="text" id="searchInput" class="search-input form-input" placeholder="Search by company name or notes...">
+    </div>
+
+    <select id="sortBy" class="form-select" style="min-width:170px;">
+      <option value="uploadDate_DESC">Latest Uploaded</option>
+      <option value="uploadDate_ASC">Oldest Uploaded</option>
+      <option value="companyName_ASC">Company Name (A-Z)</option>
+      <option value="companyName_DESC">Company Name (Z-A)</option>
+      <option value="startDate_DESC">Start Date (Newest)</option>
+      <option value="startDate_ASC">Start Date (Oldest)</option>
+      <option value="endDate_DESC">End Date (Newest)</option>
+      <option value="endDate_ASC">End Date (Oldest)</option>
+    </select>
+
+    <select id="collegeFilter" class="form-select" style="min-width:160px;">
+      <option value="">— All Colleges —</option>
+      <option value="CCS">CCS</option>
+      <option value="CTE">CTE</option>
+      <option value="CBA">CBA</option>
+      <option value="CCJE">CCJE</option>
+      <option value="CAS">CAS</option>
+      <option value="COA">COA</option>
+      <option value="none">No College</option>
+    </select>
+
+    <select id="partnerTypeFilter" class="form-select" style="min-width:175px;">
+      <option value="">— All Partner Types —</option>
+      <option value="Industry Partner">Industry Partner</option>
+      <option value="Institutional Partner">Institutional Partner</option>
+      <option value="none">No Partner Type</option>
+    </select>
+
+    <div class="view-mode-buttons">
+      <button id="tileViewBtn" class="view-mode-btn active" title="Tile view"><i class="fas fa-th-large"></i></button>
+      <button id="listViewBtn" class="view-mode-btn" title="List view"><i class="fas fa-list"></i></button>
+    </div>
+  </div>
+
+  <!-- ==================== MAIN LAYOUT ==================== -->
+  <main class="container" style="padding-top: 1rem;">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <h3>Filter by Status</h3>
+        <div class="status-filter-buttons">
+          <button class="status-filter-btn active" data-status="all"><i class="fas fa-folder-open"></i> All MOAs</button>
+          <button class="status-filter-btn" data-status="active"><i class="fas fa-check-circle"></i> Active</button>
+          <button class="status-filter-btn" data-status="dueForRenewal"><i class="fas fa-sync"></i> Renewal</button>
+          <button class="status-filter-btn" data-status="expired"><i class="fas fa-history"></i> Expired</button>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <h3>Statistics</h3>
+        <div class="stats">
+          <div class="stat-item">
+            <span id="totalCountLabel" class="stat-label">Total MOAs:</span>
+            <span id="totalCount" class="stat-value">0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-section" style="margin-top: auto; padding-top: 2rem;">
+        <p style="font-size:0.72rem; color: rgba(255,255,255,0.3); line-height:1.6;">
+          <i class="fas fa-lock" style="margin-right:4px;"></i>
+          You are browsing in read-only mode. All data is for informational purposes only.
+        </p>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <section class="main-content">
+      <div id="loadingSpinner" class="loading" style="display:none;">Loading MOAs...</div>
+      <div id="emptyState" class="empty-state" style="display:none;">
+        <div class="empty-icon"><i class="fas fa-folder-open" style="font-size:3rem; color:var(--border-color);"></i></div>
+        <h2 id="emptyStateTitle">No MOAs Found</h2>
+        <p id="emptyStateMessage">No documents match your current filters.</p>
+      </div>
+      <div id="moaList" class="moa-list" style="display:none;"></div>
+      <div id="paginationControls" class="pagination-controls" style="display:none;">
+        <button id="prevPageBtn" class="btn btn-secondary"><i class="fas fa-chevron-left"></i> Previous</button>
+        <span id="pageInfo" class="page-info">Page 1</span>
+        <button id="nextPageBtn" class="btn btn-secondary">Next <i class="fas fa-chevron-right"></i></button>
+      </div>
+    </section>
+  </main>
+
+  <!-- ==================== INFO MODAL (Read-only) ==================== -->
+  <div id="infoModal" class="modal" style="display:none;">
+    <div class="modal-content info-modal-content">
+      <button class="modal-close info-modal-close">&times;</button>
+      <div class="readonly-notice">
+        <i class="fas fa-eye"></i>
+        You are viewing this MOA as a guest. No changes can be made.
+      </div>
+      <div id="infoCardContainer"></div>
+      <div class="guest-info-footer">
+        <button id="infoDownloadBtn" class="btn btn-primary">
+          <i class="fas fa-download"></i> Download PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script type="module" src="/src/guest.js"></script>
+</body>
+</html>

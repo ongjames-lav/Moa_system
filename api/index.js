@@ -279,7 +279,70 @@ router.get('/moas/:id/download', authenticateToken, async (req, res) => {
   }
 });
 
+// ========================
+// PUBLIC GUEST ROUTES (No Auth)
+// ========================
+
+router.get('/public/moas', async (req, res) => {
+  try {
+    if (!supabase) return res.status(500).json({ error: 'Database not initialized' });
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+    const { search, college, partnerType, status } = req.query;
+
+    // No user_id filter — returns ALL moas across all admins
+    let query = supabase.from('moas').select('*', { count: 'exact' });
+
+    if (search) query = query.or(`company_name.ilike.%${search}%,notes.ilike.%${search}%`);
+    if (college && college !== 'none') query = query.eq('college', college);
+    if (partnerType && partnerType !== 'none') query = query.eq('partner_type', partnerType);
+
+    // Same date-based status filtering as admin
+    const today = new Date().toISOString().split('T')[0];
+    if (status === 'active') {
+      query = query.gte('end_date', today);
+    } else if (status === 'expired') {
+      query = query.lt('end_date', today);
+    } else if (status === 'dueForRenewal') {
+      const renewalCutoff = new Date();
+      renewalCutoff.setDate(renewalCutoff.getDate() + 31);
+      query = query.gte('end_date', today).lte('end_date', renewalCutoff.toISOString().split('T')[0]);
+    }
+
+    query = query.order('upload_date', { ascending: false }).range(offset, offset + limit - 1);
+    const { data: moas, count: total, error } = await query;
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ data: moas || [], pagination: { total: total || 0, page, limit } });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to list MOAs' });
+  }
+});
+
+router.get('/public/moas/:id/download', async (req, res) => {
+  try {
+    if (!supabase) return res.status(500).json({ error: 'Database not initialized' });
+
+    // No user_id check — public download
+    const { data: moa, error } = await supabase
+      .from('moas')
+      .select('pdf_filename')
+      .eq('id', req.params.id)
+      .single();
+
+    if (error || !moa) return res.status(404).json({ error: 'MOA not found' });
+
+    const { data } = await supabase.storage.from('moas').createSignedUrl(moa.pdf_filename, 3600);
+    res.json({ url: data.signedUrl });
+  } catch (error) {
+    res.status(500).json({ error: 'Download failed' });
+  }
+});
+
 // Diagnostics
+
 router.get('/health', (req, res) => {
   res.json({ 
     status: 'OK', 
