@@ -46,8 +46,7 @@ async function checkAuth() {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (response.ok) {
-      const data = await response.json();
-      user = data.user;
+      user = await response.json();
       if (user.role !== 'admin') {
         showNotification('Access denied: Administrator privileges required.', 'error');
         setTimeout(() => window.location.href = '/', 2000);
