@@ -96,18 +96,25 @@ function setupEventListeners() {
       btn.classList.add('active');
 
       loginForm.classList.remove('active');
-      registerForm.classList.remove('active');
       registerStudentForm.classList.remove('active');
 
       if (tab === 'login') {
         loginForm.classList.add('active');
-      } else if (tab === 'register') {
-        registerForm.classList.add('active');
       } else if (tab === 'register-student') {
         registerStudentForm.classList.add('active');
       }
     });
   });
+
+  // "Register here" shortcut link below the login form
+  const goToStudentRegister = document.getElementById('goToStudentRegister');
+  if (goToStudentRegister) {
+    goToStudentRegister.addEventListener('click', (e) => {
+      e.preventDefault();
+      const studentTab = authTabs.querySelector('[data-tab="register-student"]');
+      if (studentTab) studentTab.click();
+    });
+  }
 
   // Forms
   loginForm.addEventListener('submit', handleLogin);

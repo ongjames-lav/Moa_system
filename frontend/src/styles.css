@@ -640,10 +640,6 @@ body {
   width: 100%;
 }
 
-#deleteSelectedBtn {
-  margin-top: 0.75rem;
-}
-
 .btn-icon {
   background: none;
   border: none;
@@ -681,7 +677,8 @@ body {
   background-color: rgba(220, 38, 38, 0.1);
 }
 
-/* Status Filter Buttons */
+/* Sidebar Button Groups */
+.sidebar-buttons-group,
 .status-filter-buttons {
   display: flex;
   flex-direction: column;
