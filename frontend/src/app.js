@@ -322,8 +322,8 @@ async function handleStudentRegister(e) {
     return;
   }
 
-  if (!/^\d{8}$/.test(studentId)) {
-    registerStudentError.textContent = 'Student ID must be exactly 8 digits (YYYYNNNN)';
+  if (!/^\d{9}$/.test(studentId)) {
+    registerStudentError.textContent = 'Student ID must be exactly 9 digits (e.g. 202201627)';
     registerStudentError.classList.add('show');
     return;
   }
