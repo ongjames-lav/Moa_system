@@ -54,7 +54,7 @@ const authenticateToken = (req, res, next) => {
 
 router.post('/auth/register', async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { username, email, password, studentId } = req.body;
     if (!username || !email || !password) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
@@ -67,15 +67,21 @@ router.post('/auth/register', async (req, res) => {
     const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
     if (authError) return res.status(400).json({ error: authError.message });
 
+    const role = studentId ? 'student' : 'admin';
+    const approvalStatus = studentId ? 'pending' : 'approved';
+
     await supabase.from('users').insert({
       id: authData.user.id,
       email,
       username,
+      role,
+      student_id: studentId || null,
+      approval_status: approvalStatus,
       created_at: new Date().toISOString()
     });
 
-    const token = jwt.sign({ id: authData.user.id, email, username }, jwtSecret, { expiresIn: '7d' });
-    res.json({ user: { id: authData.user.id, email, username }, token });
+    const token = jwt.sign({ id: authData.user.id, email, username, role, student_id: studentId || null, approval_status: approvalStatus }, jwtSecret, { expiresIn: '7d' });
+    res.json({ user: { id: authData.user.id, email, username, role, student_id: studentId || null, approval_status: approvalStatus }, token });
   } catch (error) {
     res.status(500).json({ error: 'Registration failed' });
   }
@@ -92,8 +98,25 @@ router.post('/auth/login', async (req, res) => {
     if (authError) return res.status(401).json({ error: 'Invalid credentials' });
 
     const { data: userData } = await supabase.from('users').select('*').eq('id', authData.user.id).single();
-    const token = jwt.sign({ id: authData.user.id, email, username: userData.username }, jwtSecret, { expiresIn: '7d' });
-    res.json({ user: { id: authData.user.id, email, username: userData.username }, token });
+    const token = jwt.sign({ 
+      id: authData.user.id, 
+      email, 
+      username: userData.username,
+      role: userData.role || 'student',
+      student_id: userData.student_id || null,
+      approval_status: userData.approval_status || 'pending'
+    }, jwtSecret, { expiresIn: '7d' });
+    res.json({ 
+      user: { 
+        id: authData.user.id, 
+        email, 
+        username: userData.username,
+        role: userData.role || 'student',
+        student_id: userData.student_id || null,
+        approval_status: userData.approval_status || 'pending'
+      }, 
+      token 
+    });
   } catch (error) {
     res.status(500).json({ error: 'Login failed' });
   }
@@ -105,6 +128,40 @@ router.get('/auth/me', authenticateToken, async (req, res) => {
     res.json(user);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch user' });
+  }
+});
+
+// Admin Queue Endpoints
+router.get('/auth/users/pending', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized: Admin access required' });
+    const { data: users, error } = await supabase.from('users').select('*').eq('approval_status', 'pending').order('created_at', { ascending: false });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(users || []);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch pending users' });
+  }
+});
+
+router.put('/auth/users/:id/approve', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized: Admin access required' });
+    const { data, error } = await supabase.from('users').update({ approval_status: 'approved', role: 'student' }).eq('id', req.params.id).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to approve user' });
+  }
+});
+
+router.put('/auth/users/:id/decline', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized: Admin access required' });
+    const { data, error } = await supabase.from('users').update({ approval_status: 'declined' }).eq('id', req.params.id).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to decline user' });
   }
 });
 
@@ -228,16 +285,17 @@ router.delete('/moas/:id', authenticateToken, async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete MOA' });
   }
-});
-
-router.get('/moas', authenticateToken, async (req, res) => {
+});router.get('/moas', authenticateToken, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const offset = (page - 1) * limit;
     const { search, college, partnerType, status } = req.query;
 
-    let query = supabase.from('moas').select('*', { count: 'exact' }).eq('user_id', req.user.id);
+    let query = supabase.from('moas').select('*', { count: 'exact' });
+    if (req.user.role === 'admin') {
+      query = query.eq('user_id', req.user.id);
+    }
     if (search) query = query.or(`company_name.ilike.%${search}%,notes.ilike.%${search}%`);
     if (college && college !== 'none') query = query.eq('college', college);
     if (partnerType && partnerType !== 'none') query = query.eq('partner_type', partnerType);
@@ -245,13 +303,10 @@ router.get('/moas', authenticateToken, async (req, res) => {
     // Date-based Status Filtering
     const today = new Date().toISOString().split('T')[0];
     if (status === 'active') {
-      // Active: (not expired yet) AND (already started OR start date not set)
       query = query.gte('end_date', today);
     } else if (status === 'expired') {
-      // Expired: End date has passed
       query = query.lt('end_date', today);
     } else if (status === 'dueForRenewal') {
-      // Renewal: Expiring in the next 31 days
       const thirtyOneDaysLater = new Date();
       thirtyOneDaysLater.setDate(thirtyOneDaysLater.getDate() + 31);
       const renewalDate = thirtyOneDaysLater.toISOString().split('T')[0];
@@ -262,7 +317,21 @@ router.get('/moas', authenticateToken, async (req, res) => {
     query = query.order('upload_date', { ascending: false }).range(offset, offset + limit - 1);
     const { data: moas, count: total } = await query;
 
-    res.json({ data: moas || [], pagination: { total: total || 0, page, limit } });
+    let resultMoas = moas || [];
+
+    // Data Masking & PDF Removal for Students
+    if (req.user.role === 'student') {
+      const isApproved = req.user.approval_status === 'approved';
+      resultMoas = resultMoas.map(moa => ({
+        ...moa,
+        company_name: isApproved ? moa.company_name : '••••••••••••',
+        notes: isApproved ? moa.notes : `•••••••••••• (${req.user.approval_status === 'declined' ? 'Registration declined' : 'Account pending approval'})`,
+        pdf_filename: null,
+        pdf_original_name: null
+      }));
+    }
+
+    res.json({ data: resultMoas, pagination: { total: total || 0, page, limit } });
   } catch (error) {
     res.status(500).json({ error: 'Failed to list MOAs' });
   }
@@ -270,8 +339,13 @@ router.get('/moas', authenticateToken, async (req, res) => {
 
 router.get('/moas/:id/download', authenticateToken, async (req, res) => {
   try {
-    const { data: moa } = await supabase.from('moas').select('pdf_filename').eq('id', req.params.id).eq('user_id', req.user.id).single();
-    if (!moa) return res.status(403).json({ error: 'Unauthorized' });
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden: Only administrators can download MOA documents' });
+    }
+
+    let query = supabase.from('moas').select('pdf_filename').eq('id', req.params.id).eq('user_id', req.user.id);
+    const { data: moa } = await query.single();
+    if (!moa) return res.status(403).json({ error: 'Unauthorized or MOA not found' });
 
     const { data } = await supabase.storage.from('moas').createSignedUrl(moa.pdf_filename, 3600);
     res.json({ url: data.signedUrl });
@@ -281,65 +355,15 @@ router.get('/moas/:id/download', authenticateToken, async (req, res) => {
 });
 
 // ========================
-// PUBLIC GUEST ROUTES (No Auth)
+// PUBLIC GUEST ROUTES (Locked Down)
 // ========================
 
 router.get('/public/moas', async (req, res) => {
-  try {
-    if (!supabase) return res.status(500).json({ error: 'Database not initialized' });
-
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
-    const offset = (page - 1) * limit;
-    const { search, college, partnerType, status } = req.query;
-
-    // No user_id filter — returns ALL moas across all admins
-    let query = supabase.from('moas').select('*', { count: 'exact' });
-
-    if (search) query = query.or(`company_name.ilike.%${search}%,notes.ilike.%${search}%`);
-    if (college && college !== 'none') query = query.eq('college', college);
-    if (partnerType && partnerType !== 'none') query = query.eq('partner_type', partnerType);
-
-    // Same date-based status filtering as admin
-    const today = new Date().toISOString().split('T')[0];
-    if (status === 'active') {
-      query = query.gte('end_date', today);
-    } else if (status === 'expired') {
-      query = query.lt('end_date', today);
-    } else if (status === 'dueForRenewal') {
-      const renewalCutoff = new Date();
-      renewalCutoff.setDate(renewalCutoff.getDate() + 31);
-      query = query.gte('end_date', today).lte('end_date', renewalCutoff.toISOString().split('T')[0]);
-    }
-
-    query = query.order('upload_date', { ascending: false }).range(offset, offset + limit - 1);
-    const { data: moas, count: total, error } = await query;
-
-    if (error) return res.status(500).json({ error: error.message });
-    res.json({ data: moas || [], pagination: { total: total || 0, page, limit } });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to list MOAs' });
-  }
+  res.status(401).json({ error: 'Unauthorized: Please log in as a student or admin to view MOA directory' });
 });
 
 router.get('/public/moas/:id/download', async (req, res) => {
-  try {
-    if (!supabase) return res.status(500).json({ error: 'Database not initialized' });
-
-    // No user_id check — public download
-    const { data: moa, error } = await supabase
-      .from('moas')
-      .select('pdf_filename')
-      .eq('id', req.params.id)
-      .single();
-
-    if (error || !moa) return res.status(404).json({ error: 'MOA not found' });
-
-    const { data } = await supabase.storage.from('moas').createSignedUrl(moa.pdf_filename, 3600);
-    res.json({ url: data.signedUrl });
-  } catch (error) {
-    res.status(500).json({ error: 'Download failed' });
-  }
+  res.status(401).json({ error: 'Unauthorized: Please log in as a student or admin to download MOA documents' });
 });
 
 // Diagnostics

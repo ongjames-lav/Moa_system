@@ -40,14 +40,17 @@ const loginScreen = document.getElementById('loginScreen');
 const appScreen = document.getElementById('appScreen');
 const loginForm = document.getElementById('loginForm');
 const registerForm = document.getElementById('registerForm');
+const registerStudentForm = document.getElementById('registerStudentForm');
 const authTabs = document.getElementById('authTabs');
 const loginError = document.getElementById('loginError');
 const registerError = document.getElementById('registerError');
+const registerStudentError = document.getElementById('registerStudentError');
 const userDisplay = document.getElementById('userDisplay');
 const logoutBtn = document.getElementById('logoutBtn');
 
 // DOM Elements - Main UI
 const uploadBtn = document.getElementById('uploadBtn');
+const studentApprovalsBtn = document.getElementById('studentApprovalsBtn');
 const selectAllBtn = document.getElementById('selectAllBtn');
 const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
 const searchInput = document.getElementById('searchInput');
@@ -66,6 +69,7 @@ const uploadModal = document.getElementById('uploadModal');
 const detailModal = document.getElementById('detailModal');
 const infoModal = document.getElementById('infoModal');
 const confirmModal = document.getElementById('confirmModal');
+const approvalsModal = document.getElementById('approvalsModal');
 const infoCardContainer = document.getElementById('infoCardContainer');
 
 // Initialize
@@ -91,31 +95,32 @@ function setupEventListeners() {
       authTabs.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
 
+      loginForm.classList.remove('active');
+      registerForm.classList.remove('active');
+      registerStudentForm.classList.remove('active');
+
       if (tab === 'login') {
         loginForm.classList.add('active');
-        registerForm.classList.remove('active');
-      } else {
-        loginForm.classList.remove('active');
+      } else if (tab === 'register') {
         registerForm.classList.add('active');
+      } else if (tab === 'register-student') {
+        registerStudentForm.classList.add('active');
       }
     });
   });
 
-  // Guest View Button
-  const guestViewBtn = document.getElementById('guestViewBtn');
-  if (guestViewBtn) {
-    guestViewBtn.addEventListener('click', () => {
-      window.location.href = '/guest';
-    });
-  }
-
   // Forms
   loginForm.addEventListener('submit', handleLogin);
   registerForm.addEventListener('submit', handleRegister);
+  registerStudentForm.addEventListener('submit', handleStudentRegister);
   logoutBtn.addEventListener('click', handleLogout);
 
   // Sidebar & Header Actions
   uploadBtn.addEventListener('click', () => openModal(uploadModal));
+  studentApprovalsBtn.addEventListener('click', () => {
+    openModal(approvalsModal);
+    loadPendingApprovals();
+  });
   settingsToggleBtn.addEventListener('click', toggleSettingsPanel);
   sortBySelect.addEventListener('change', () => { currentPage = 1; loadMOAs(); });
   searchInput.addEventListener('input', debounce(() => { currentPage = 1; loadMOAs(); }, 400));
@@ -157,7 +162,7 @@ function setupEventListeners() {
   });
 
   // Modal Close buttons
-  document.querySelectorAll('.modal-close, .modal-close-btn, #closeModalBtn, #confirmCancel').forEach(btn => {
+  document.querySelectorAll('.modal-close, .modal-close-btn, #closeModalBtn, #confirmCancel, #closeApprovalsBtn').forEach(btn => {
     btn.addEventListener('click', closeAllModals);
   });
 
@@ -268,6 +273,8 @@ async function handleRegister(e) {
       body: JSON.stringify({ username, email, password })
     });
 
+    const contentType = response.headers.get('content-type');
+    let data;
     if (contentType && contentType.includes('application/json')) {
       data = await response.json();
     } else {
@@ -287,8 +294,70 @@ async function handleRegister(e) {
       registerError.classList.add('show');
     }
   } catch (error) {
-    registerError.textContent = 'Connection error';
+    registerError.textContent = error.message || 'Connection error';
     registerError.classList.add('show');
+  } finally {
+    setLoading(submitBtn, false);
+  }
+}
+
+async function handleStudentRegister(e) {
+  e.preventDefault();
+  const username = document.getElementById('registerStudentUsername').value.trim();
+  const email = document.getElementById('registerStudentEmail').value.trim();
+  const studentId = document.getElementById('registerStudentId').value.trim();
+  const password = document.getElementById('registerStudentPassword').value;
+  registerStudentError.classList.remove('show');
+
+  // Regex validation
+  if (!email.endsWith('@cityofmalabonuniversity.edu.ph')) {
+    registerStudentError.textContent = 'Email must end with @cityofmalabonuniversity.edu.ph';
+    registerStudentError.classList.add('show');
+    return;
+  }
+
+  if (!/^\d{8}$/.test(studentId)) {
+    registerStudentError.textContent = 'Student ID must be exactly 8 digits (YYYYNNNN)';
+    registerStudentError.classList.add('show');
+    return;
+  }
+
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  setLoading(submitBtn, true, 'Registering...');
+
+  try {
+    const response = await fetch(`${API_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, email, password, studentId })
+    });
+
+    const contentType = response.headers.get('content-type');
+    let data;
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      console.error('Non-JSON response received:', text.substring(0, 200));
+      throw new Error(`Server returned unexpected format: ${response.status}`);
+    }
+
+    if (response.ok) {
+      token = data.token;
+      user = data.user;
+      localStorage.setItem('authToken', token);
+      userDisplay.textContent = user.username;
+      showApp();
+      showNotification('Student registration successful! Account pending admin approval.', 'success');
+    } else {
+      registerStudentError.textContent = data.error || `Registration failed (${response.status})`;
+      registerStudentError.classList.add('show');
+    }
+  } catch (error) {
+    registerStudentError.textContent = error.message || 'Connection error';
+    registerStudentError.classList.add('show');
+  } finally {
+    setLoading(submitBtn, false);
   }
 }
 
@@ -307,6 +376,36 @@ function showLogin() {
 function showApp() {
   loginScreen.classList.remove('active');
   appScreen.classList.add('active');
+
+  // RBAC UI adjustments
+  const isAdmin = user && user.role === 'admin';
+  if (uploadBtn) uploadBtn.style.display = isAdmin ? 'block' : 'none';
+  if (studentApprovalsBtn) studentApprovalsBtn.style.display = isAdmin ? 'block' : 'none';
+  if (selectAllBtn) selectAllBtn.style.display = isAdmin ? 'block' : 'none';
+  if (deleteSelectedBtn) deleteSelectedBtn.style.display = 'none';
+
+  // Student status banner
+  let banner = document.getElementById('studentStatusBanner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'studentStatusBanner';
+    banner.className = 'alert alert-warning';
+    banner.style.cssText = 'margin-bottom: 1rem; display: none; background: #fff3cd; color: #856404; padding: 12px 16px; border-radius: 6px; border-left: 4px solid #ffeba2;';
+    const container = document.querySelector('.main-content');
+    if (container) container.insertBefore(banner, container.firstChild);
+  }
+
+  if (user && user.role === 'student' && user.approval_status !== 'approved') {
+    banner.innerHTML = `<i class="fas fa-user-clock"></i> <strong>Account Pending Approval:</strong> Your student account is currently under review by an administrator. MOA details are masked until approved.`;
+    banner.style.display = 'block';
+  } else {
+    banner.style.display = 'none';
+  }
+
+  if (isAdmin) {
+    fetchPendingApprovalsCount();
+  }
+
   loadMOAs();
 }
 
@@ -410,9 +509,20 @@ function createMOACard(moa) {
   const partnerType = moa.partner_type || moa.partnerType || '';
   const partnerBadge = partnerType ? `<span class="status-badge partner-badge partner-${partnerType.toLowerCase().replace(/ /g, '-')}">${partnerType}</span>` : '';
 
+  const isAdmin = user && user.role === 'admin';
+  const checkboxHtml = isAdmin ? `<input type="checkbox" class="moa-checkbox" data-id="${moa.id}" ${selectedMOAs.has(moa.id) ? 'checked' : ''}>` : '';
+  const actionsHtml = isAdmin ? `
+            <div class="moa-actions">
+                <button class="btn-icon btn-view" title="Edit"><i class="fas fa-edit"></i></button>
+                <button class="btn-icon btn-download" title="Download"><i class="fas fa-download"></i></button>
+                <button class="btn-icon btn-cert" title="Generate Certificate" style="color:#7c3aed;"><i class="fas fa-certificate"></i></button>
+                <button class="btn-icon btn-delete danger" title="Delete"><i class="fas fa-trash"></i></button>
+            </div>
+  ` : '';
+
   card.innerHTML = `
         <div class="moa-card-header">
-            <input type="checkbox" class="moa-checkbox" data-id="${moa.id}" ${selectedMOAs.has(moa.id) ? 'checked' : ''}>
+            ${checkboxHtml}
             <div class="moa-header-content">
                 <h3 class="moa-company-name">${escapeHtml(moa.company_name || moa.companyName)}</h3>
                 <div class="badges-wrapper">
@@ -433,44 +543,41 @@ function createMOACard(moa) {
                 <span class="meta-item"><i class="fas fa-file-pdf"></i> ${escapeHtml(moa.pdf_filename || moa.pdfOriginalName || 'moa.pdf')}</span>
                 <span class="meta-item"><i class="fas fa-calendar-alt"></i> ${formatDate(moa.upload_date || moa.uploadDate)}</span>
             </div>
-            <div class="moa-actions">
-                <button class="btn-icon btn-view" title="Edit"><i class="fas fa-edit"></i></button>
-                <button class="btn-icon btn-download" title="Download"><i class="fas fa-download"></i></button>
-                <button class="btn-icon btn-cert" title="Generate Certificate" style="color:#7c3aed;"><i class="fas fa-certificate"></i></button>
-                <button class="btn-icon btn-delete danger" title="Delete"><i class="fas fa-trash"></i></button>
-            </div>
+            ${actionsHtml}
         </div>
     `;
 
-  // Events
-  card.querySelector('.moa-checkbox').addEventListener('change', (e) => {
-    if (e.target.checked) selectedMOAs.add(moa.id);
-    else selectedMOAs.delete(moa.id);
-    card.classList.toggle('selected', e.target.checked);
-    updateBulkUI();
-  });
+  // Events (only attach if isAdmin so buttons exist)
+  if (isAdmin) {
+    card.querySelector('.moa-checkbox').addEventListener('change', (e) => {
+      if (e.target.checked) selectedMOAs.add(moa.id);
+      else selectedMOAs.delete(moa.id);
+      card.classList.toggle('selected', e.target.checked);
+      updateBulkUI();
+    });
 
-  card.querySelector('.btn-view').addEventListener('click', (e) => {
-    e.stopPropagation();
-    openEditModal(moa);
-  });
+    card.querySelector('.btn-view').addEventListener('click', (e) => {
+      e.stopPropagation();
+      openEditModal(moa);
+    });
 
-  card.querySelector('.btn-download').addEventListener('click', (e) => {
-    e.stopPropagation();
-    downloadMOA(moa.id);
-  });
+    card.querySelector('.btn-download').addEventListener('click', (e) => {
+      e.stopPropagation();
+      downloadMOA(moa.id);
+    });
 
-  card.querySelector('.btn-cert').addEventListener('click', (e) => {
-    e.stopPropagation();
-    openCertModal(moa);
-  });
+    card.querySelector('.btn-cert').addEventListener('click', (e) => {
+      e.stopPropagation();
+      openCertModal(moa);
+    });
 
-  card.querySelector('.btn-delete').addEventListener('click', (e) => {
-    e.stopPropagation();
-    deleteId = moa.id;
-    document.getElementById('confirmMessage').textContent = 'Are you sure you want to delete this MOA?';
-    openModal(confirmModal);
-  });
+    card.querySelector('.btn-delete').addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteId = moa.id;
+      document.getElementById('confirmMessage').textContent = 'Are you sure you want to delete this MOA?';
+      openModal(confirmModal);
+    });
+  }
 
   card.addEventListener('click', (e) => {
     if (!e.target.closest('.moa-actions') && !e.target.closest('.moa-checkbox')) {
@@ -479,6 +586,104 @@ function createMOACard(moa) {
   });
 
   return card;
+}
+
+// Pending Approval Helper Functions
+async function fetchPendingApprovalsCount() {
+  try {
+    const res = await fetch(`${API_URL}/auth/users/pending`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const badge = document.getElementById('pendingBadge');
+      if (badge) {
+        badge.textContent = data.users.length;
+        badge.style.display = data.users.length > 0 ? 'inline-block' : 'none';
+      }
+    }
+  } catch (err) {
+    console.error('Failed to fetch pending count', err);
+  }
+}
+
+async function loadPendingApprovals() {
+  const loadingEl = document.getElementById('approvalsLoading');
+  const emptyEl = document.getElementById('approvalsEmptyState');
+  const tableEl = document.getElementById('approvalsTable');
+  const tbodyEl = document.getElementById('approvalsTableBody');
+
+  loadingEl.style.display = 'block';
+  emptyEl.style.display = 'none';
+  tableEl.style.display = 'none';
+  tbodyEl.innerHTML = '';
+
+  try {
+    const res = await fetch(`${API_URL}/auth/users/pending`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('Failed to load pending users');
+    const data = await res.json();
+
+    loadingEl.style.display = 'none';
+    if (data.users.length === 0) {
+      emptyEl.style.display = 'block';
+      const badge = document.getElementById('pendingBadge');
+      if (badge) badge.style.display = 'none';
+    } else {
+      tableEl.style.display = 'table';
+      const badge = document.getElementById('pendingBadge');
+      if (badge) {
+        badge.textContent = data.users.length;
+        badge.style.display = 'inline-block';
+      }
+
+      data.users.forEach(u => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid var(--border-color)';
+        tr.innerHTML = `
+          <td style="padding: 12px;">${escapeHtml(u.username)}</td>
+          <td style="padding: 12px;">${escapeHtml(u.email)}</td>
+          <td style="padding: 12px;">${escapeHtml(u.student_id || 'N/A')}</td>
+          <td style="padding: 12px;">${formatDate(u.created_at)}</td>
+          <td style="padding: 12px; text-align: right;">
+            <button class="btn btn-primary btn-sm approve-btn" data-id="${u.id}" style="padding: 4px 10px; font-size: 0.8rem; margin-right: 5px;">Approve</button>
+            <button class="btn btn-danger btn-sm decline-btn" data-id="${u.id}" style="padding: 4px 10px; font-size: 0.8rem;">Decline</button>
+          </td>
+        `;
+
+        tr.querySelector('.approve-btn').addEventListener('click', async () => {
+          await handleApprovalAction(u.id, 'approve');
+        });
+        tr.querySelector('.decline-btn').addEventListener('click', async () => {
+          await handleApprovalAction(u.id, 'decline');
+        });
+
+        tbodyEl.appendChild(tr);
+      });
+    }
+  } catch (err) {
+    loadingEl.style.display = 'none';
+    showNotification(err.message, 'error');
+  }
+}
+
+async function handleApprovalAction(userId, action) {
+  try {
+    const res = await fetch(`${API_URL}/auth/users/${userId}/${action}`, {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || `Failed to ${action} user`);
+    }
+    showNotification(`Student account successfully ${action}d.`, 'success');
+    fetchPendingApprovalsCount();
+    await loadPendingApprovals();
+  } catch (err) {
+    showNotification(err.message, 'error');
+  }
 }
 
 // Action Handlers
