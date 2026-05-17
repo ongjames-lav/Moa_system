@@ -125,7 +125,7 @@ function setupEventListeners() {
   // Sidebar & Header Actions
   uploadBtn.addEventListener('click', () => openModal(uploadModal));
   studentApprovalsBtn.addEventListener('click', () => {
-    window.open('/student-management.html', '_blank');
+    window.location.href = '/student-management.html';
   });
   settingsToggleBtn.addEventListener('click', toggleSettingsPanel);
   sortBySelect.addEventListener('change', () => { currentPage = 1; loadMOAs(); });
