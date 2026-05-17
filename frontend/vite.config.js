@@ -9,7 +9,8 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: 'index.html',
-        guest: 'guest/index.html'
+        guest: 'guest/index.html',
+        studentManagement: 'student-management.html'
       }
     },
     minify: 'esbuild'

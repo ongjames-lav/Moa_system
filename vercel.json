@@ -3,6 +3,7 @@
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api" },
     { "source": "/guest", "destination": "/guest.html" },
+    { "source": "/student-management", "destination": "/student-management.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

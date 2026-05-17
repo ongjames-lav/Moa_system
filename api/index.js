@@ -143,6 +143,17 @@ router.get('/auth/users/pending', authenticateToken, async (req, res) => {
   }
 });
 
+router.get('/auth/users/students', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized: Admin access required' });
+    const { data: users, error } = await supabase.from('users').select('*').not('student_id', 'is', null).order('created_at', { ascending: false });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(users || []);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch student users' });
+  }
+});
+
 router.put('/auth/users/:id/approve', authenticateToken, async (req, res) => {
   try {
     if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized: Admin access required' });

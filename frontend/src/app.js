@@ -118,8 +118,7 @@ function setupEventListeners() {
   // Sidebar & Header Actions
   uploadBtn.addEventListener('click', () => openModal(uploadModal));
   studentApprovalsBtn.addEventListener('click', () => {
-    openModal(approvalsModal);
-    loadPendingApprovals();
+    window.open('/student-management', '_blank');
   });
   settingsToggleBtn.addEventListener('click', toggleSettingsPanel);
   sortBySelect.addEventListener('change', () => { currentPage = 1; loadMOAs(); });
@@ -595,11 +594,11 @@ async function fetchPendingApprovalsCount() {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (res.ok) {
-      const data = await res.json();
+      const users = await res.json();
       const badge = document.getElementById('pendingBadge');
       if (badge) {
-        badge.textContent = data.users.length;
-        badge.style.display = data.users.length > 0 ? 'inline-block' : 'none';
+        badge.textContent = users.length;
+        badge.style.display = users.length > 0 ? 'inline-block' : 'none';
       }
     }
   } catch (err) {
