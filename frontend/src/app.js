@@ -994,6 +994,17 @@ function openInfoModal(moa) {
   const pType = moa.partner_type || moa.partnerType || '';
   const partnerBadge = pType ? `<span class="status-badge partner-badge partner-${pType.toLowerCase().replace(/ /g, '-')}">${pType}</span>` : '';
 
+  const isAdmin = user && user.role === 'admin';
+  const footerActionsHtml = isAdmin ? `
+            <div class="moa-card-footer">
+                <div class="moa-actions">
+                    <button class="btn btn-secondary btn-icon-edit"><i class="fas fa-edit"></i> Edit</button>
+                    <button class="btn btn-primary btn-icon-download"><i class="fas fa-download"></i> Download</button>
+                    <button class="btn btn-icon-cert" style="background:#ede9fe;color:#6d28d9;border:none;padding:0.875rem 1.25rem;border-radius:8px;font-size:0.95rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:0.5rem;"><i class="fas fa-certificate"></i> Certificate</button>
+                </div>
+            </div>
+  ` : '';
+
   infoCardContainer.innerHTML = `
         <div class="moa-card">
             <div class="moa-card-header">
@@ -1021,27 +1032,23 @@ function openInfoModal(moa) {
                     </div>
                 </div>
             </div>
-            <div class="moa-card-footer">
-                <div class="moa-actions">
-                    <button class="btn btn-secondary btn-icon-edit"><i class="fas fa-edit"></i> Edit</button>
-                    <button class="btn btn-primary btn-icon-download"><i class="fas fa-download"></i> Download</button>
-                    <button class="btn btn-icon-cert" style="background:#ede9fe;color:#6d28d9;border:none;padding:0.875rem 1.25rem;border-radius:8px;font-size:0.95rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:0.5rem;"><i class="fas fa-certificate"></i> Certificate</button>
-                </div>
-            </div>
+            ${footerActionsHtml}
         </div>
     `;
 
-  infoCardContainer.querySelector('.btn-icon-edit').addEventListener('click', () => {
-    closeAllModals();
-    openEditModal(moa);
-  });
-  infoCardContainer.querySelector('.btn-icon-download').addEventListener('click', () => {
-    downloadMOA(moa.id);
-  });
-  infoCardContainer.querySelector('.btn-icon-cert').addEventListener('click', () => {
-    closeAllModals();
-    openCertModal(moa);
-  });
+  if (isAdmin) {
+    infoCardContainer.querySelector('.btn-icon-edit').addEventListener('click', () => {
+      closeAllModals();
+      openEditModal(moa);
+    });
+    infoCardContainer.querySelector('.btn-icon-download').addEventListener('click', () => {
+      downloadMOA(moa.id);
+    });
+    infoCardContainer.querySelector('.btn-icon-cert').addEventListener('click', () => {
+      closeAllModals();
+      openCertModal(moa);
+    });
+  }
 
   openModal(infoModal);
 }
