@@ -354,19 +354,22 @@ app.post('/api/moas/upload', authenticateToken, upload.single('pdf'), async (req
 
     const { companyName, startDate, endDate, notes, college, partnerType } = req.body;
 
-    if (!companyName || !startDate || !endDate) {
+    if (!companyName) {
       // Delete uploaded file
       fs.unlink(req.file.path, (err) => {
         if (err) console.error('Error deleting file:', err);
       });
-      return res.status(400).json({ error: 'Company name, start date, and end date are required' });
+      return res.status(400).json({ error: 'Company name is required' });
     }
+
+    const safeStart = (startDate && typeof startDate === 'string' && startDate.trim() !== '') ? startDate : null;
+    const safeEnd = (endDate && typeof endDate === 'string' && endDate.trim() !== '') ? endDate : null;
 
     const result = await pool.query(
       `INSERT INTO moas (user_id, company_name, pdf_filename, pdf_original_name, pdf_file_size, start_date, end_date, notes, college, partner_type, upload_date, last_modified)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
        RETURNING *`,
-      [req.user.id, companyName, req.file.filename, req.file.originalname, req.file.size, startDate, endDate, notes || null, college || null, partnerType || null]
+      [req.user.id, companyName, req.file.filename, req.file.originalname, req.file.size, safeStart, safeEnd, notes || null, college || null, partnerType || null]
     );
 
     res.status(201).json({
@@ -405,12 +408,15 @@ app.put('/api/moas/:id', authenticateToken, async (req, res) => {
   try {
     const { companyName, startDate, endDate, notes, college, partnerType } = req.body;
 
+    const safeStart = (startDate && typeof startDate === 'string' && startDate.trim() !== '') ? startDate : null;
+    const safeEnd = (endDate && typeof endDate === 'string' && endDate.trim() !== '') ? endDate : null;
+
     const result = await pool.query(
       `UPDATE moas 
        SET company_name = $1, start_date = $2, end_date = $3, notes = $4, college = $5, partner_type = $6, last_modified = NOW()
        WHERE id = $7 AND user_id = $8
        RETURNING *`,
-      [companyName, startDate, endDate, notes || null, college || null, partnerType || null, req.params.id, req.user.id]
+      [companyName, safeStart, safeEnd, notes || null, college || null, partnerType || null, req.params.id, req.user.id]
     );
 
     if (result.rows.length === 0) {

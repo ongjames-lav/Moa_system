@@ -230,8 +230,8 @@ app.post('/api/moas', authenticateToken, async (req, res) => {
         pdf_filename: fileName,
         pdf_original_name: originalName,
         pdf_file_size: fileSize || 0,
-        start_date: startDate || new Date().toISOString().split('T')[0],
-        end_date: endDate || new Date().toISOString().split('T')[0],
+        start_date: (startDate && typeof startDate === 'string' && startDate.trim() !== '') ? startDate : null,
+        end_date: (endDate && typeof endDate === 'string' && endDate.trim() !== '') ? endDate : null,
         notes: notes || '',
         college: college || null,
         partner_type: partnerType || null,
@@ -448,8 +448,8 @@ app.put('/api/moas/:id', authenticateToken, async (req, res) => {
       .from('moas')
       .update({
         company_name: companyName,
-        start_date: startDate,
-        end_date: endDate,
+        start_date: (startDate && typeof startDate === 'string' && startDate.trim() !== '') ? startDate : null,
+        end_date: (endDate && typeof endDate === 'string' && endDate.trim() !== '') ? endDate : null,
         notes,
         college,
         partner_type: partnerType,

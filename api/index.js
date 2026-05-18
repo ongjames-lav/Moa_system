@@ -226,8 +226,8 @@ router.post('/moas', authenticateToken, async (req, res) => {
         company_name: companyName,
         college,
         partner_type: partnerType,
-        start_date: startDate || null,
-        end_date: endDate || null,
+        start_date: (startDate && typeof startDate === 'string' && startDate.trim() !== '') ? startDate : null,
+        end_date: (endDate && typeof endDate === 'string' && endDate.trim() !== '') ? endDate : null,
         notes,
         pdf_filename: fileName,
         pdf_original_name: originalName || null,
@@ -267,8 +267,8 @@ router.put('/moas/:id', authenticateToken, async (req, res) => {
         company_name: companyName,
         college,
         partner_type: partnerType,
-        start_date: startDate,
-        end_date: endDate,
+        start_date: (startDate && typeof startDate === 'string' && startDate.trim() !== '') ? startDate : null,
+        end_date: (endDate && typeof endDate === 'string' && endDate.trim() !== '') ? endDate : null,
         notes
       })
       .eq('id', req.params.id)

@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MOA Management System</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <script type="module" crossorigin src="/assets/main-v7eSCyoH.js"></script>
-  <link rel="modulepreload" crossorigin href="/assets/styles-D6_VvzBq.js">
-  <link rel="stylesheet" crossorigin href="/assets/styles-Bkl9jkwd.css">
+  <script type="module" crossorigin src="/assets/main-C3t3Zrsp.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/styles-C3wGwq8t.js">
+  <link rel="stylesheet" crossorigin href="/assets/styles-DVH3h7qs.css">
 </head>
 
 <body>
@@ -21,7 +21,7 @@
 
         <div id="authTabs" class="auth-tabs">
           <button class="tab-btn active" data-tab="login">Login</button>
-          <button class="tab-btn" data-tab="register">Register</button>
+          <button class="tab-btn" data-tab="register-student">Student Register</button>
         </div>
 
         <!-- Login Form -->
@@ -36,33 +36,48 @@
           </div>
           <button type="submit" class="btn btn-primary">Login</button>
           <p id="loginError" class="error-message"></p>
+          <p style="text-align: center; margin-top: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
+            New student? <a href="#" id="goToStudentRegister"
+              style="color: var(--accent-color); text-decoration: none; font-weight: 600;">Register here</a>
+          </p>
         </form>
 
-        <!-- Register Form -->
-        <form id="registerForm" class="auth-form-content">
-          <div class="form-group">
-            <label>Username</label>
-            <input type="text" id="registerUsername" placeholder="Choose a username" required>
-          </div>
-          <div class="form-group">
-            <label>Email</label>
-            <input type="email" id="registerEmail" placeholder="your@email.com" required>
-          </div>
-          <div class="form-group">
-            <label>Password</label>
-            <input type="password" id="registerPassword" placeholder="Create a password" required>
-          </div>
-          <button type="submit" class="btn btn-primary">Register</button>
+        <!-- Staff Register Form (internal only — hidden from public UI) -->
+        <form id="registerForm" class="auth-form-content" style="display: none;">
+          <input type="hidden" id="registerUsername">
+          <input type="hidden" id="registerEmail">
+          <input type="hidden" id="registerPassword">
           <p id="registerError" class="error-message"></p>
         </form>
 
-        <div class="auth-separator">
-          <span>OR</span>
-        </div>
+        <!-- Student Register Form -->
+        <form id="registerStudentForm" class="auth-form-content">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="registerStudentUsername" placeholder="Enter your full name" required>
+          </div>
+          <div class="form-group">
+            <label>CMU Student Email</label>
+            <input type="email" id="registerStudentEmail" placeholder="student@cityofmalabonuniversity.edu.ph" required>
+            <small class="form-hint"
+              style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 4px; display: block;">Must end with
+              @cityofmalabonuniversity.edu.ph</small>
+          </div>
+          <div class="form-group">
+            <label>Student ID</label>
+            <input type="text" id="registerStudentId" placeholder="e.g. 202201627" required>
+            <small class="form-hint"
+              style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 4px; display: block;">9-digit student
+              ID format (e.g. 202201627)</small>
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="registerStudentPassword" placeholder="Create a password" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Register as Student</button>
+          <p id="registerStudentError" class="error-message"></p>
+        </form>
 
-        <button type="button" id="guestViewBtn" class="btn btn-secondary btn-block">
-          <i class="fas fa-eye"></i> Browse as Guest
-        </button>
       </div>
     </div>
   </div>
@@ -147,39 +162,44 @@
     <main class="container">
       <aside class="sidebar">
         <div class="sidebar-section">
-          <div class="sidebar-section">
-            <h3>Actions</h3>
+          <h3>Actions</h3>
+          <div class="sidebar-buttons-group">
             <button id="uploadBtn" class="btn btn-primary btn-block"><i class="fas fa-plus-circle"></i> Upload
               MOA</button>
+            <button id="studentApprovalsBtn" class="btn btn-secondary btn-block"
+              style="display: none; position: relative;"><i class="fas fa-user-check"></i> Student Approvals <span
+                id="pendingBadge"
+                style="display: none; position: absolute; top: -5px; right: -5px; background: #dc3545; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.75rem; font-weight: bold;">0</span></button>
             <button id="selectAllBtn" class="btn btn-secondary btn-block" style="display: none;"><i
                 class="fas fa-check-double"></i> Select All</button>
             <button id="deleteSelectedBtn" class="btn btn-danger btn-block" style="display: none;"><i
                 class="fas fa-trash-alt"></i> Delete Selected</button>
           </div>
+        </div>
 
-          <div class="sidebar-section">
-            <h3>Filter by Status</h3>
-            <div class="status-filter-buttons">
-              <button id="allStatusBtn" class="status-filter-btn active" data-status="all"><i
-                  class="fas fa-folder-open"></i> All MOAs</button>
-              <button id="activeStatusBtn" class="status-filter-btn" data-status="active"><i
-                  class="fas fa-check-circle"></i> Active</button>
-              <button id="dueForRenewalBtn" class="status-filter-btn" data-status="dueForRenewal"><i
-                  class="fas fa-sync"></i> Renewal</button>
-              <button id="expiredStatusBtn" class="status-filter-btn" data-status="expired"><i
-                  class="fas fa-history"></i> Expired</button>
+        <div class="sidebar-section">
+          <h3>Filter by Status</h3>
+          <div class="status-filter-buttons">
+            <button id="allStatusBtn" class="status-filter-btn active" data-status="all"><i
+                class="fas fa-folder-open"></i> All MOAs</button>
+            <button id="activeStatusBtn" class="status-filter-btn" data-status="active"><i
+                class="fas fa-check-circle"></i> Active</button>
+            <button id="dueForRenewalBtn" class="status-filter-btn" data-status="dueForRenewal"><i
+                class="fas fa-sync"></i> Renewal</button>
+            <button id="expiredStatusBtn" class="status-filter-btn" data-status="expired"><i class="fas fa-history"></i>
+              Expired</button>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <h3>Statistics</h3>
+          <div class="stats">
+            <div class="stat-item">
+              <span id="totalCountLabel" class="stat-label">Total MOAs:</span>
+              <span id="totalCount" class="stat-value">0</span>
             </div>
           </div>
-
-          <div class="sidebar-section">
-            <h3>Statistics</h3>
-            <div class="stats">
-              <div class="stat-item">
-                <span id="totalCountLabel" class="stat-label">Total MOAs:</span>
-                <span id="totalCount" class="stat-value">0</span>
-              </div>
-            </div>
-          </div>
+        </div>
       </aside>
 
       <section class="main-content">
@@ -225,12 +245,12 @@
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
           <div class="form-group">
-            <label>Start Date *</label>
-            <input type="date" id="uploadStartDate" name="startDate" class="form-input" required>
+            <label>Start Date</label>
+            <input type="date" id="uploadStartDate" name="startDate" class="form-input">
           </div>
           <div class="form-group">
-            <label>End Date *</label>
-            <input type="date" id="uploadEndDate" name="endDate" class="form-input" required>
+            <label>End Date</label>
+            <input type="date" id="uploadEndDate" name="endDate" class="form-input">
           </div>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
@@ -389,7 +409,11 @@
               <p class="cert-republic">REPUBLIC OF THE PHILIPPINES</p>
               <p class="cert-city-name">CITY OF MALABON</p>
               <p class="cert-university-name">CITY OF MALABON UNIVERSITY</p>
-              <p class="cert-address-line">Pampano cor. Maya-Maya St. Brgy. Longos, Malabon City, 1472 Philippines<br>Trunkline: (02) 8376-0064 &nbsp;|&nbsp; <a href="mailto:cmuofficial@cityofmalabonuniversity.edu.ph" class="cert-email-link">cmuofficial@cityofmalabonuniversity.edu.ph</a><br>Website: cityofmalabonuniversity.edu.ph</p>
+              <p class="cert-address-line">Pampano cor. Maya-Maya St. Brgy. Longos, Malabon City, 1472
+                Philippines<br>Trunkline: (02) 8376-0064 &nbsp;|&nbsp; <a
+                  href="mailto:cmuofficial@cityofmalabonuniversity.edu.ph"
+                  class="cert-email-link">cmuofficial@cityofmalabonuniversity.edu.ph</a><br>Website:
+                cityofmalabonuniversity.edu.ph</p>
             </div>
           </div>
 
@@ -401,7 +425,8 @@
             <p class="cert-subtitle">OF MEMORANDUM OF AGREEMENT</p>
 
             <div class="cert-body-text">
-              <p class="cert-para">This is to certify that the Memorandum of Agreement (MOA) entered into by and between:</p>
+              <p class="cert-para">This is to certify that the Memorandum of Agreement (MOA) entered into by and
+                between:</p>
 
               <div class="cert-party-block">
                 <p id="certPartyName" class="cert-party-name">[NAME OF FIRST PARTY / INSTITUTION]</p>
@@ -409,14 +434,18 @@
                 <p class="cert-party-cmu">City of Malabon University</p>
               </div>
 
-              <p class="cert-para" id="certStatusPara">remains valid, binding, and in full force and effect as of this date.</p>
+              <p class="cert-para" id="certStatusPara">remains valid, binding, and in full force and effect as of this
+                date.</p>
 
-              <p class="cert-para">The said agreement covers the terms and conditions relating to Partnership, and both parties have agreed to uphold their respective roles and responsibilities as stipulated in the document.</p>
+              <p class="cert-para">The said agreement covers the terms and conditions relating to Partnership, and both
+                parties have agreed to uphold their respective roles and responsibilities as stipulated in the document.
+              </p>
             </div>
 
             <!-- Issued This — date underline with hint directly below -->
             <div class="cert-issuance-block">
-              <p class="cert-issued-line">Issued this &nbsp;<span id="certIssuanceDate" class="cert-issued-date">__________________</span></p>
+              <p class="cert-issued-line">Issued this &nbsp;<span id="certIssuanceDate"
+                  class="cert-issued-date">__________________</span></p>
               <p class="cert-date-hint">(date of issuance)</p>
             </div>
 
@@ -424,7 +453,8 @@
             <div class="cert-certifier-block">
               <p class="cert-certified-label">Certified by:</p>
               <div class="cert-sig-area">
-                <img src="/cert-assets/extract_the_signature_202604172240.png" alt="Signature of Engr. Jed G. Concepcion" class="cert-sig-img">
+                <img src="/cert-assets/extract_the_signature_202604172240.png"
+                  alt="Signature of Engr. Jed G. Concepcion" class="cert-sig-img">
               </div>
               <p class="cert-sig-name">Engr. Jed G. Concepcion</p>
               <p class="cert-sig-title">Head, Business Linkages and Partnership</p>
@@ -435,6 +465,43 @@
         </div><!-- end cert-page -->
       </div><!-- end cert-page-container -->
     </div><!-- end cert-modal-wrapper -->
+  </div>
+
+  <!-- ==================== STUDENT APPROVALS MODAL ==================== -->
+  <div id="approvalsModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 800px;">
+      <div class="modal-header">
+        <div class="modal-title-container">
+          <h2><i class="fas fa-user-shield"></i> Student Registration Approvals</h2>
+        </div>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body" style="max-height: 500px; overflow-y: auto;">
+        <div id="approvalsLoading" class="loading" style="display: none;">Loading pending accounts...</div>
+        <div id="approvalsEmptyState" class="empty-state" style="display: none; padding: 2rem 0;">
+          <div class="empty-icon"><i class="fas fa-users-slash"
+              style="font-size: 3rem; color: var(--border-color);"></i></div>
+          <h3>No Pending Approvals</h3>
+          <p>All student registrations have been reviewed.</p>
+        </div>
+        <table id="approvalsTable" class="approvals-table"
+          style="width: 100%; border-collapse: collapse; display: none;">
+          <thead>
+            <tr style="border-bottom: 2px solid var(--border-color); text-align: left;">
+              <th style="padding: 12px;">Full Name</th>
+              <th style="padding: 12px;">Email</th>
+              <th style="padding: 12px;">Student ID</th>
+              <th style="padding: 12px;">Registered Date</th>
+              <th style="padding: 12px; text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="approvalsTableBody"></tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button id="closeApprovalsBtn" class="btn btn-secondary">Close</button>
+      </div>
+    </div>
   </div>
 
   <!-- TOAST NOTIFICATION -->
