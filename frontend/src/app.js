@@ -497,18 +497,22 @@ function createMOACard(moa) {
   card.className = `moa-card ${selectedMOAs.has(moa.id) ? 'selected' : ''}`;
 
   // Status Logic (match Electron)
+  const rawStart = moa.start_date || moa.startDate;
+  const rawEnd = moa.end_date || moa.endDate;
+  const hasDates = !!rawStart && !!rawEnd;
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const startDate = new Date(moa.start_date || moa.startDate);
-  const endDate = new Date(moa.end_date || moa.endDate);
-  endDate.setHours(23, 59, 59, 999);
+  const startDate = hasDates ? new Date(rawStart) : null;
+  const endDate = hasDates ? new Date(rawEnd) : null;
+  if (endDate) endDate.setHours(23, 59, 59, 999);
 
-  const timeDiff = endDate - today;
-  const daysUntilExpiry = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
-  const isActive = today >= startDate && today <= endDate;
-  const isDueForRenewal = daysUntilExpiry > 0 && daysUntilExpiry <= 31;
+  const timeDiff = endDate ? endDate - today : 0;
+  const daysUntilExpiry = endDate ? Math.ceil(timeDiff / (1000 * 60 * 60 * 24)) : 0;
+  const isActive = hasDates ? (today >= startDate && today <= endDate) : false;
+  const isDueForRenewal = hasDates ? (daysUntilExpiry > 0 && daysUntilExpiry <= 31) : false;
 
-  const statusBadge = isActive ? '<span class="status-badge status-active">Active</span>' : '<span class="status-badge status-inactive">Expired</span>';
+  const statusBadge = hasDates ? (isActive ? '<span class="status-badge status-active">Active</span>' : '<span class="status-badge status-inactive">Expired</span>') : '';
   const renewalBadge = isDueForRenewal ? '<span class="status-badge status-renewal">Due for Renewal</span>' : '';
   const college = moa.college || '';
   const collegeBadge = college ? `<span class="status-badge college-badge college-${college.toLowerCase()}">${college}</span>` : '';
@@ -886,22 +890,30 @@ function closeAllModals() {
 
 // ── Certificate Modal ─────────────────────────────────────────────────────────
 function openCertModal(moa) {
+  const rawEnd = moa.end_date || moa.endDate;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const endDate = new Date(moa.end_date || moa.endDate);
-  endDate.setHours(23, 59, 59, 999);
 
-  const timeDiff = endDate - today;
-  const daysLeft = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
-  const isExpired = today > endDate;
+  let isExpired = false;
+  let isRenewal = false;
+  let daysLeft = 0;
+
+  if (rawEnd) {
+    const endDate = new Date(rawEnd);
+    if (!isNaN(endDate.getTime())) {
+      endDate.setHours(23, 59, 59, 999);
+      const timeDiff = endDate - today;
+      daysLeft = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+      isExpired = today > endDate;
+      isRenewal = !isExpired && daysLeft <= 31;
+    }
+  }
 
   // Block certificate generation if expired
   if (isExpired) {
     showToast('This MOA has expired. Certification of Validity can only be generated for Active agreements.', 'error');
     return;
   }
-
-  const isRenewal = !isExpired && daysLeft <= 31;
 
   // Determine status sentence
   let statusText;
@@ -976,18 +988,22 @@ function openInfoModal(moa) {
   const endDate = formatDate(moa.end_date || moa.endDate);
   const uploadDate = formatDate(moa.upload_date || moa.uploadDate);
 
+  const rawStart = moa.start_date || moa.startDate;
+  const rawEnd = moa.end_date || moa.endDate;
+  const hasDates = !!rawStart && !!rawEnd;
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const startDateObj = new Date(moa.start_date || moa.startDate);
-  const endDateObj = new Date(moa.end_date || moa.endDate);
-  endDateObj.setHours(23, 59, 59, 999);
+  const startDateObj = hasDates ? new Date(rawStart) : null;
+  const endDateObj = hasDates ? new Date(rawEnd) : null;
+  if (endDateObj) endDateObj.setHours(23, 59, 59, 999);
 
-  const timeDiff = endDateObj - today;
-  const daysUntilExpiry = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
-  const isActive = today >= startDateObj && today <= endDateObj;
-  const isDueForRenewal = daysUntilExpiry > 0 && daysUntilExpiry <= 31;
+  const timeDiff = endDateObj ? endDateObj - today : 0;
+  const daysUntilExpiry = endDateObj ? Math.ceil(timeDiff / (1000 * 60 * 60 * 24)) : 0;
+  const isActive = hasDates ? (today >= startDateObj && today <= endDateObj) : false;
+  const isDueForRenewal = hasDates ? (daysUntilExpiry > 0 && daysUntilExpiry <= 31) : false;
 
-  const statusBadge = isActive ? '<span class="status-badge status-active">Active</span>' : '<span class="status-badge status-inactive">Expired</span>';
+  const statusBadge = hasDates ? (isActive ? '<span class="status-badge status-active">Active</span>' : '<span class="status-badge status-inactive">Expired</span>') : '';
   const renewalBadge = isDueForRenewal ? '<span class="status-badge status-renewal">Due for Renewal</span>' : '';
   const college = moa.college || '';
   const collegeBadge = college ? `<span class="status-badge college-badge college-${college.toLowerCase()}">${college}</span>` : '';
@@ -995,15 +1011,19 @@ function openInfoModal(moa) {
   const partnerBadge = pType ? `<span class="status-badge partner-badge partner-${pType.toLowerCase().replace(/ /g, '-')}">${pType}</span>` : '';
 
   const isAdmin = user && user.role === 'admin';
-  const footerActionsHtml = isAdmin ? `
-            <div class="moa-card-footer">
-                <div class="moa-actions">
+  const adminButtonsHtml = isAdmin ? `
                     <button class="btn btn-secondary btn-icon-edit"><i class="fas fa-edit"></i> Edit</button>
                     <button class="btn btn-primary btn-icon-download"><i class="fas fa-download"></i> Download</button>
+  ` : '';
+
+  const footerActionsHtml = `
+            <div class="moa-card-footer">
+                <div class="moa-actions">
+                    ${adminButtonsHtml}
                     <button class="btn btn-icon-cert" style="background:#ede9fe;color:#6d28d9;border:none;padding:0.875rem 1.25rem;border-radius:8px;font-size:0.95rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:0.5rem;"><i class="fas fa-certificate"></i> Certificate</button>
                 </div>
             </div>
-  ` : '';
+  `;
 
   infoCardContainer.innerHTML = `
         <div class="moa-card">
@@ -1022,7 +1042,7 @@ function openInfoModal(moa) {
                     <div class="date-item"><span class="date-label">End Date:</span><span class="date-value">${endDate}</span></div>
                 </div>
                 <div style="margin-top: 1rem; padding: 1rem; background: var(--bg-color); border-radius: 8px;">
-                    <p style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600; margin-bottom: 0.5rem;">NOTES:</p>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600; margin-bottom: 0.5rem;">DETAILS:</p>
                     <p style="color: var(--text-primary); line-height: 1.5; margin: 0;">${escapeHtml(moa.notes || 'No notes added')}</p>
                 </div>
                 <div style="margin-top: 1rem; padding: 1rem; background: var(--bg-color); border-radius: 8px;">
@@ -1044,11 +1064,11 @@ function openInfoModal(moa) {
     infoCardContainer.querySelector('.btn-icon-download').addEventListener('click', () => {
       downloadMOA(moa.id);
     });
-    infoCardContainer.querySelector('.btn-icon-cert').addEventListener('click', () => {
-      closeAllModals();
-      openCertModal(moa);
-    });
   }
+  infoCardContainer.querySelector('.btn-icon-cert').addEventListener('click', () => {
+    closeAllModals();
+    openCertModal(moa);
+  });
 
   openModal(infoModal);
 }
@@ -1129,8 +1149,9 @@ function showNotification(message, type = 'info') {
 
 // Formatters
 function formatDate(dateString) {
-  if (!dateString) return 'N/A';
+  if (!dateString) return '—';
   const date = new Date(dateString);
+  if (isNaN(date.getTime())) return '—';
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
